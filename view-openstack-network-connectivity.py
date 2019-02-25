@@ -44,6 +44,8 @@ def removeDup(src_list):
 
 if __name__ == '__main__':
 
+	node_szie = 10
+
 	###############################################
 	### Raw 데이터 생성
 	###############################################
@@ -53,9 +55,9 @@ if __name__ == '__main__':
 		"pub-network-001",
 		"pub-network-002",
 		"pub-compute-001",
-#		"pub-compute-002",
-#		"pub-compute-003",
-#		"pub-compute-004",
+		"pub-compute-002",
+		"pub-compute-003",
+		"pub-compute-004",
 	)
 
 	for hostname in hostnames:
@@ -298,22 +300,22 @@ if __name__ == '__main__':
 			nodes_if_type_normal.append(if_name)
 
 	## Interface Node 그리기
-	nx.draw_networkx_nodes(G, pos, nodelist=nodes_interface, with_labels=True, node_size=20, node_shape='o', node_color='#F972FF', alpha=0.5, linewidths=1)
+	nx.draw_networkx_nodes(G, pos, nodelist=nodes_interface, with_labels=True, node_size=node_szie, node_shape='o', node_color='#F972FF', alpha=0.5, linewidths=1)
 
 	## Port Node 그리기
-	nx.draw_networkx_nodes(G, pos, nodelist=nodes_port, with_labels=True, node_size=20, node_shape='o', node_color='#72B2FF', alpha=0.5, linewidths=1)
+	nx.draw_networkx_nodes(G, pos, nodelist=nodes_port, with_labels=True, node_size=node_szie, node_shape='o', node_color='#72B2FF', alpha=0.5, linewidths=1)
 
 	## Bridge Node 그리기
-	nx.draw_networkx_nodes(G, pos, nodelist=nodes_bridge, with_labels=True, node_size=20, node_shape='o', node_color='#FF5634', alpha=0.5, linewidths=1)
+	nx.draw_networkx_nodes(G, pos, nodelist=nodes_bridge, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF5634', alpha=0.5, linewidths=1)
 
 	## Patch 타입 노드 추가 표시 (색상 변경)
-	nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_patch, with_labels=True, node_size=20, node_shape='o', node_color='#279700', alpha=0.5, linewidths=1)
+	nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_patch, with_labels=True, node_size=node_szie, node_shape='o', node_color='#279700', alpha=0.5, linewidths=1)
 
 	## VxLAN 타입 노드 추가 표시 (색상 변경)
-	nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_vxlan, with_labels=True, node_size=20, node_shape='o', node_color='#FF990F', alpha=0.5, linewidths=1)
+	nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_vxlan, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF990F', alpha=0.5, linewidths=1)
 
 	## Internal 타입 노드 추가 표시 (색상 변경)
-	nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_internal, with_labels=True, node_size=20, node_shape='o', node_color='#382000', alpha=0.5, linewidths=1)
+	nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_internal, with_labels=True, node_size=node_szie, node_shape='o', node_color='#382000', alpha=0.5, linewidths=1)
 
 	## Interface/Port/Bridge Node Label 그리기
 	nx.draw_networkx_labels(G, pos, font_size=1, font_family='sans-serif')
@@ -323,10 +325,10 @@ if __name__ == '__main__':
 	edge_P2B = [(u, v) for (u, v) in G.edges() if (u.startswith("P:") and v.startswith("B:")) or (u.startswith("B:") and v.startswith("P:"))]
 
 	## Edge 그리기
-	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edge_I2P), width=0.2, alpha=0.5, edge_color='#E67E22')
-	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edge_P2B), width=0.5, alpha=0.5, edge_color='#2ECC71')
-	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edge_if_type_patch), width=2, alpha=0.3, edge_color='#00FFE8', style="dashed")
-	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edge_if_type_vxlan), width=3, alpha=0.3, edge_color='#FFF818', style="dashed")
+	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edge_I2P), width=0.1, alpha=0.5, edge_color='#E67E22')
+	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edge_P2B), width=0.3, alpha=0.5, edge_color='#2ECC71')
+	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edge_if_type_patch), width=1, alpha=0.5, edge_color='#00FFE8', style="dashed")
+	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edge_if_type_vxlan), width=2, alpha=0.5, edge_color='#FFF818', style="dashed")
 
 	plt.axis('off')
 
@@ -335,4 +337,4 @@ if __name__ == '__main__':
 	plt.title("OpenStack Network Connectivity")
 
 	print("Creating Image........")
-	plt.savefig("/var/www/html/test.png", format = "png", dpi = 1200)
+	plt.savefig("/var/www/html/OpenStack-Network-Connectivity.png", format = "png", dpi = 2400)
