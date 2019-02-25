@@ -304,7 +304,7 @@ if __name__ == '__main__':
 	nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_internal, with_labels=True, node_size=50, node_shape='o', node_color='#382000', alpha=0.5, linewidths=1)
 
 	## Interface/Port/Bridge Node Label 그리기
-	nx.draw_networkx_labels(G, pos, font_size=1, font_family='sans-serif')
+	nx.draw_networkx_labels(G, pos, font_size=2, font_family='sans-serif')
 
 	## Interface/Port/Bridge Edge 목록 생성
 	edge_I2P = [(u, v) for (u, v) in G.edges() if (u.startswith("I:") and v.startswith("P:")) or (u.startswith("P:") and v.startswith("I:"))]
