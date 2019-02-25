@@ -40,12 +40,6 @@ def isStrBlank(myString):
 def removeDup(src_list):
 	return set([tuple(sorted(item)) for item in src_list])
 
-def xstr(value):
-    if value is None:
-        return 'NONE'
-    else:
-        return str(value)
-
 #####################################################################################
 
 if __name__ == '__main__':
@@ -58,15 +52,16 @@ if __name__ == '__main__':
 	result = []
 
 	hostnames = (
-		"pub-network-001",
-		"pub-network-002",
+#		"pub-network-001",
+#		"pub-network-002",
 		"pub-compute-001",
-		"pub-compute-002",
-		"pub-compute-003",
-		"pub-compute-004",
+#		"pub-compute-002",
+#		"pub-compute-003",
+#		"pub-compute-004",
 	)
 
 	for hostname in hostnames:
+
 		output_bridge = exec_ssh(hostname, "ovs-vsctl -f json list br")
 		output_port = exec_ssh(hostname, "ovs-vsctl -f json list port")
 		output_interface = exec_ssh(hostname, "ovs-vsctl -f json list interface")
@@ -87,6 +82,7 @@ if __name__ == '__main__':
 			if if_type in ["vxlan", "patch", "internal"]:
 				if_name = if_name + "(" + hostname + ")"
 			if_external_ids = item_interface[13][1]
+			if_link_speed = item_interface[19]
 			if_link_state = item_interface[20]
 			if type(item_interface[24]) is list:
 				if_mtu = None
@@ -137,6 +133,7 @@ if __name__ == '__main__':
 							if_br_uuid = tmp_br_uuid
 							if_br_name = "B:" + tmp_br_name + "(" + hostname + ")"
 							break
+	
 			result.append({
 				"if_hostname": if_hostname,
 				"if_uuid": if_uuid,
@@ -148,9 +145,11 @@ if __name__ == '__main__':
 				"if_external_ids_iface_id": if_external_ids_iface_id,
 				"if_external_ids_iface_status": if_external_ids_iface_status,
 				"if_external_ids_vm_uuid": if_external_ids_vm_uuid,
+				"if_link_speed": if_link_speed,
 				"if_link_state": if_link_state,
 				"if_mtu": if_mtu,
 				"if_ofport": if_ofport,
+				"if_options": if_options,
 				"if_options_patch_peer": if_options_patch_peer,
 				"if_options_vxlan_df_default": if_options_vxlan_df_default,
 				"if_options_vxlan_in_key": if_options_vxlan_in_key,
@@ -183,30 +182,32 @@ if __name__ == '__main__':
 		if_type = interface['if_type']
 
 		G.add_node(if_name,
-			if_hostname = xstr(interface['if_hostname']),
-			if_uuid = xstr(interface['if_uuid']),
-			if_admin_state = xstr(interface['if_admin_state']),
-			if_type = xstr(if_type),
-			if_external_ids_attached_mac = xstr(interface['if_external_ids_attached_mac']),
-			if_external_ids_iface_id = xstr(interface['if_external_ids_iface_id']),
-			if_external_ids_iface_status = xstr(interface['if_external_ids_iface_status']),
-			if_external_ids_vm_uuid = xstr(interface['if_external_ids_vm_uuid']),
-			if_link_state = xstr(interface['if_link_state']),
-			if_mtu = xstr(interface['if_mtu']),
-			if_ofport = xstr(interface['if_ofport']),
-			if_options_patch_peer = xstr(interface['if_options_patch_peer']),
-			if_options_vxlan_df_default = xstr(interface['if_options_vxlan_df_default']),
-			if_options_vxlan_in_key = xstr(interface['if_options_vxlan_in_key']),
-			if_options_vxlan_local_ip = xstr(interface['if_options_vxlan_local_ip']),
-			if_options_vxlan_out_key = xstr(interface['if_options_vxlan_out_key']),
-			if_options_vxlan_remote_ip = xstr(interface['if_options_vxlan_remote_ip']),
-			if_other_config = xstr(interface['if_other_config']),
-			if_statistics = xstr(interface['if_statistics']),
-			if_status = xstr(interface['if_status']),
-			if_port_uuid = xstr(interface['if_port_uuid']),
-			if_port_name = xstr(interface['if_port_name']),
-			if_br_uuid = xstr(interface['if_br_uuid']),
-			if_br_name = xstr(interface['if_br_name'])
+			if_hostname = interface['if_hostname'],
+			if_uuid = interface['if_uuid'],
+			if_admin_state = interface['if_admin_state'],
+			if_type = if_type,
+			if_external_ids_attached_mac = interface['if_external_ids_attached_mac'],
+			if_external_ids_iface_id = interface['if_external_ids_iface_id'],
+			if_external_ids_iface_status = interface['if_external_ids_iface_status'],
+			if_external_ids_vm_uuid = interface['if_external_ids_vm_uuid'],
+			if_link_speed = interface['if_link_speed'],
+			if_link_state = interface['if_link_state'],
+			if_mtu = interface['if_mtu'],
+			if_ofport = interface['if_ofport'],
+			if_options = interface['if_options'],
+			if_options_patch_peer = interface['if_options_patch_peer'],
+			if_options_vxlan_df_default = interface['if_options_vxlan_df_default'],
+			if_options_vxlan_in_key = interface['if_options_vxlan_in_key'],
+			if_options_vxlan_local_ip = interface['if_options_vxlan_local_ip'],
+			if_options_vxlan_out_key = interface['if_options_vxlan_out_key'],
+			if_options_vxlan_remote_ip = interface['if_options_vxlan_remote_ip'],
+			if_other_config = interface['if_other_config'],
+			if_statistics = interface['if_statistics'],
+			if_status = interface['if_status'],
+			if_port_uuid = interface['if_port_uuid'],
+			if_port_name = interface['if_port_name'],
+			if_br_uuid = interface['if_br_uuid'],
+			if_br_name = interface['if_br_name']
 		)
 
 		G.add_edge(interface['if_name'], interface['if_port_name'])
@@ -335,9 +336,9 @@ if __name__ == '__main__':
 
 	plt.title("OpenStack Network Connectivity")
 
+	#nx.write_gexf(G, "test.gexf")
+	#nx.write_gexf(G, "file.gexf", version="1.2draft")
 	#print(G.node.data())
-	nx.write_gexf(G, "/var/www/html/OpenStack-Network-Connectivity.gexf")
-	#nx.write_gexf(G, "/var/www/html/OpenStack-Network-Connectivity.gexf", version="1.2draft")
 
 	print("Creating Image........")
 	plt.savefig("/var/www/html/OpenStack-Network-Connectivity.png", format = "png", dpi = 1200)

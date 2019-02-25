@@ -58,15 +58,16 @@ if __name__ == '__main__':
 	result = []
 
 	hostnames = (
-		"pub-network-001",
-		"pub-network-002",
+#		"pub-network-001",
+#		"pub-network-002",
 		"pub-compute-001",
-		"pub-compute-002",
-		"pub-compute-003",
-		"pub-compute-004",
+#		"pub-compute-002",
+#		"pub-compute-003",
+#		"pub-compute-004",
 	)
 
 	for hostname in hostnames:
+
 		output_bridge = exec_ssh(hostname, "ovs-vsctl -f json list br")
 		output_port = exec_ssh(hostname, "ovs-vsctl -f json list port")
 		output_interface = exec_ssh(hostname, "ovs-vsctl -f json list interface")
@@ -137,6 +138,7 @@ if __name__ == '__main__':
 							if_br_uuid = tmp_br_uuid
 							if_br_name = "B:" + tmp_br_name + "(" + hostname + ")"
 							break
+	
 			result.append({
 				"if_hostname": if_hostname,
 				"if_uuid": if_uuid,
@@ -212,132 +214,5 @@ if __name__ == '__main__':
 		G.add_edge(interface['if_name'], interface['if_port_name'])
 		G.add_edge(interface['if_port_name'], interface['if_br_name'])
 
-		## VxLAN 터널 연결 구성
-		#if if_type == "if_type" and not isStrBlank(data['if_type']):
-		if if_type == "vxlan":
-			vxlan_local_ip = interface['if_options_vxlan_local_ip']
-			vxlan_remote_ip = interface['if_options_vxlan_remote_ip']
-			vxlan_local_hostname = interface['if_options_vxlan_local_ip']
-			vxlan_remote_hostname = interface['if_options_vxlan_remote_ip']
-			#print(vxlan_local_ip, vxlan_remote_ip)
-			#G.add_edge(interface['if_name'], interface['if_port_name'])
-			#print(if_name, interface['if_options'])
-
-	#print(G.nodes.data())
-	#print(G.nodes())
-	#print(G.edges())
-
-	## 기본 레이아웃
-	#pos = nx.shell_layout(G)  # positions for all nodes
-	pos = nx.spring_layout(G, k=0.05, iterations=40)  # positions for all nodes
-	#pos = nx.spring_layout(G, iterations=50)
-	#pos = nx.spectral_layout(G, scale=2)  # positions for all nodes
-	#pos = nx.circular_layout(G)  # positions for all nodes
-	#pos = nx.random_layout(G)  # positions for all nodes
-	#pos = hierarchy_pos(G, "B:br-ex(pub-compute-001)")
-
-	## 노드 겹침 회희 레이아웃::Kamada Kawai (주의: 노드가 많을 경우, 시간이 오래 걸림)
-	#df = pd.DataFrame(index=G.nodes(), columns=G.nodes())
-	#for row, data in nx.shortest_path_length(G):
-	#    for col, dist in data.items():
-	#        df.loc[row,col] = dist
-	#df = df.fillna(df.max().max())
-	#pos = nx.kamada_kawai_layout(G, dist=df.to_dict())
-
-	## Node 종류(Interface/Port/Bridge)별 목록 생성
-	nodes_interface = [node for node in G.nodes() if node.startswith("I:")]
-	nodes_port = [node for node in G.nodes() if node.startswith("P:")]
-	nodes_bridge = [node for node in G.nodes() if node.startswith("B:")]
-
-	## VxLAN 터널 링크 정보 Dictionay 생성
-	vxlan_link_dict = {}
-	for node_data in G.nodes(data=True):
-		if_name = node_data[0]
-		data_dict = node_data[1]
-		if len(data_dict) > 0:
-			if_type = data_dict['if_type']
-			if if_type == "vxlan":
-				vxlan_local_ip = data_dict['if_options_vxlan_local_ip']
-				vxlan_local_hostname = socket.gethostbyaddr(vxlan_local_ip)[0]
-				vxlan_remote_ip = data_dict['if_options_vxlan_remote_ip']
-				vxlan_remote_hostname = socket.gethostbyaddr(vxlan_remote_ip)[0]
-				vxlan_link_dict[vxlan_local_hostname + "---" + vxlan_remote_hostname] = if_name
-	#print(vxlan_link_dict)
-
-	## if_type 속성에 따른 Node 및 Edge 목록 생성
-	nodes_if_type_patch = []
-	nodes_if_type_vxlan = []
-	nodes_if_type_internal = []
-	nodes_if_type_normal = []
-	edge_if_type_patch = []
-	edge_if_type_vxlan = []
-	for node_data in G.nodes(data=True):
-		if_name = node_data[0]
-		data_dict = node_data[1]
-		if len(data_dict) > 0:
-			if_type = data_dict['if_type']
-			if if_type == "patch":
-				nodes_if_type_patch.append(if_name)
-				peer_if_hostname = data_dict['if_hostname']
-				peer_if_name = "I:" + data_dict['if_options_patch_peer'] + "(" + peer_if_hostname + ")"
-				edge_if_type_patch.append((if_name, peer_if_name))
-				
-			elif if_type == "vxlan":
-				nodes_if_type_vxlan.append(if_name)
-				vxlan_local_ip = data_dict['if_options_vxlan_local_ip']
-				vxlan_local_hostname = socket.gethostbyaddr(vxlan_local_ip)[0]
-				vxlan_remote_ip = data_dict['if_options_vxlan_remote_ip']
-				vxlan_remote_hostname = socket.gethostbyaddr(vxlan_remote_ip)[0]
-				if vxlan_remote_hostname in hostnames:
-					find_key = vxlan_remote_hostname + "---" + vxlan_local_hostname
-					remote_if_name = vxlan_link_dict[find_key]
-					#sys.exit(1)
-					edge_if_type_vxlan.append((if_name, remote_if_name))
-			elif if_type == "internal":
-				nodes_if_type_internal.append(if_name)
-		else:
-			nodes_if_type_normal.append(if_name)
-
-	## Interface Node 그리기
-	nx.draw_networkx_nodes(G, pos, nodelist=nodes_interface, with_labels=True, node_size=node_szie, node_shape='o', node_color='#F972FF', alpha=0.5, linewidths=1)
-
-	## Port Node 그리기
-	nx.draw_networkx_nodes(G, pos, nodelist=nodes_port, with_labels=True, node_size=node_szie, node_shape='o', node_color='#72B2FF', alpha=0.5, linewidths=1)
-
-	## Bridge Node 그리기
-	nx.draw_networkx_nodes(G, pos, nodelist=nodes_bridge, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF5634', alpha=0.5, linewidths=1)
-
-	## Patch 타입 노드 추가 표시 (색상 변경)
-	nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_patch, with_labels=True, node_size=node_szie, node_shape='o', node_color='#279700', alpha=0.5, linewidths=1)
-
-	## VxLAN 타입 노드 추가 표시 (색상 변경)
-	nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_vxlan, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF990F', alpha=0.5, linewidths=1)
-
-	## Internal 타입 노드 추가 표시 (색상 변경)
-	nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_internal, with_labels=True, node_size=node_szie, node_shape='o', node_color='#382000', alpha=0.5, linewidths=1)
-
-	## Interface/Port/Bridge Node Label 그리기
-	nx.draw_networkx_labels(G, pos, font_size=1, font_family='sans-serif')
-
-	## Interface/Port/Bridge Edge 목록 생성 (중복 존재 가능)
-	edge_I2P = [(u, v) for (u, v) in G.edges() if (u.startswith("I:") and v.startswith("P:")) or (u.startswith("P:") and v.startswith("I:"))]
-	edge_P2B = [(u, v) for (u, v) in G.edges() if (u.startswith("P:") and v.startswith("B:")) or (u.startswith("B:") and v.startswith("P:"))]
-
-	## Edge 그리기
-	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edge_I2P), width=0.1, alpha=0.5, edge_color='#E67E22')
-	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edge_P2B), width=0.3, alpha=0.5, edge_color='#2ECC71')
-	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edge_if_type_patch), width=1, alpha=0.5, edge_color='#00FFE8', style="dashed")
-	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edge_if_type_vxlan), width=2, alpha=0.5, edge_color='#FFF818', style="dashed")
-
-	plt.axis('off')
-
-	#plt.figure(figsize = (10,9))
-
-	plt.title("OpenStack Network Connectivity")
-
-	#print(G.node.data())
-	nx.write_gexf(G, "/var/www/html/OpenStack-Network-Connectivity.gexf")
-	#nx.write_gexf(G, "/var/www/html/OpenStack-Network-Connectivity.gexf", version="1.2draft")
-
-	print("Creating Image........")
-	plt.savefig("/var/www/html/OpenStack-Network-Connectivity.png", format = "png", dpi = 1200)
+	#nx.write_gexf(G, "test.gexf")
+	nx.write_gexf(G, "file.gexf", version="1.2draft")
