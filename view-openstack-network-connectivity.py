@@ -223,13 +223,22 @@ if __name__ == '__main__':
 	#print(G.nodes())
 	#print(G.edges())
 
+	## 기본 레이아웃
 	#pos = nx.shell_layout(G)  # positions for all nodes
-	pos = nx.spring_layout(G, k=0.05, iterations=40)  # positions for all nodes
+	#pos = nx.spring_layout(G, k=0.05, iterations=40)  # positions for all nodes
 	#pos = nx.spring_layout(G, iterations=50)
 	#pos = nx.spectral_layout(G, scale=2)  # positions for all nodes
 	#pos = nx.circular_layout(G)  # positions for all nodes
 	#pos = nx.random_layout(G)  # positions for all nodes
 	#pos = hierarchy_pos(G, "B:br-ex(pub-compute-001)")
+
+	## Kamada Kawai 레이아웃
+	df = pd.DataFrame(index=G.nodes(), columns=G.nodes())
+	for row, data in nx.shortest_path_length(G):
+	    for col, dist in data.items():
+	        df.loc[row,col] = dist
+	df = df.fillna(df.max().max())
+	pos = nx.kamada_kawai_layout(G, dist=df.to_dict())
 
 	## Node 종류(Interface/Port/Bridge)별 목록 생성
 	nodes_interface = [node for node in G.nodes() if node.startswith("I:")]
