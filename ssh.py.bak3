@@ -1,0 +1,86 @@
+#!/usr/bin/env python
+# -*- mode:python; coding:utf-8 -*-
+
+import paramiko
+import time
+import sys
+import json
+
+def exec_ssh(ssh_hostname, ssh_cmd):
+	SSH_USERNAME = "root"
+	SSH_PASSWORD = "password"
+	SSH_KEY_FILE = "/root/.ssh/id_rsa"
+
+	ssh = paramiko.SSHClient()
+	ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+	ssh_stdin = ssh_stdout = ssh_stderr = None
+
+	try:
+	    #ssh.connect(SSH_ADDRESS, username=SSH_USERNAME, password=SSH_PASSWORD)
+	    ssh.connect(hostname=ssh_hostname, port=22, username=SSH_USERNAME, key_filename=SSH_KEY_FILE)
+	    ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(ssh_cmd, timeout=None, bufsize=-1, get_pty=False, environment=None)
+	except Exception as e:
+	    sys.stderr.write("SSH connection error: {0}".format(e))
+
+	output = ssh_stdout.read()
+
+	return output
+
+if __name__ == '__main__':
+	output_bridge = exec_ssh("pub-compute-001", "ovs-vsctl -f json list br")
+	output_port = exec_ssh("pub-compute-001", "ovs-vsctl -f json list port")
+	output_interface = exec_ssh("pub-compute-001", "ovs-vsctl -f json list interface")
+
+#	json_data_bridge = json.loads(output_bridge)
+#	for item in json_data_bridge['data']:
+#		br_uuid = item[0]
+#		br_name = item[13]
+#		br_ports = item[16]
+#		#print(br_name)
+#		#print(br_ports)
+
+	json_data_bridge = json.loads(output_bridge)
+	json_data_interface = json.loads(output_interface)
+	json_data_port = json.loads(output_port)
+	for item_interface in json_data_interface['data']:
+		if_uuid = item_interface[0]
+		if_admin_state = item_interface[1]
+		if_port_uuid = if_br_uuid = None
+		if_name = item_interface[26]
+		if_type = item_interface[33]
+		if_external_ids = item_interface[13][1]
+		if_external_ids_attached_mac = if_external_ids_iface_id = if_external_ids_iface_status = if_external_ids_vm_uuid = None
+		if len(if_external_ids) > 0:
+			if_external_ids_attached_mac = if_external_ids[0][1]
+			if_external_ids_iface_id = if_external_ids[1][1]
+			if_external_ids_iface_status = if_external_ids[2][1]
+			if len(if_external_ids) > 3:
+				if_external_ids_vm_uuid = if_external_ids[3][1]
+		if_link_speed = item_interface[19]
+		if_link_state = item_interface[20]
+		if_mtu = item_interface[24]
+		## Interface가 속해 있는 Port 찾기
+		for item_port in json_data_port['data']:
+			if if_uuid[1] == item_port[8][1]:
+				if_port_uuid = item_port[0][1]
+				if_port_name = item_port[11]
+				break
+		## Port가 속해 있는 Bridge 찾기
+		if if_port_uuid:
+			for item_bridge in json_data_bridge['data']:
+				tmp_br_uuid = item_bridge[0][1]
+				#print if_br_uuid
+				#print("port_uuid: %s, br_uuid: %s, br_ports %s" % (if_port_uuid, item_bridge[0], item_bridge[16]))
+				for port in item_bridge[16][1]:
+					if if_port_uuid == port[1]:
+						if_br_uuid = tmp_br_uuid
+						break
+
+#	json_data_port = json.loads(output_port)
+#	for item in json_data_port['data']:
+#		port_uuid = item[0]
+#		port_name = item[11]
+#		port_interfaces = item[8]
+#		print(port_name)
+#		print(port_interfaces)

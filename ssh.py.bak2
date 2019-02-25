@@ -1,0 +1,72 @@
+#!/usr/bin/env python
+# -*- mode:python; coding:utf-8 -*-
+
+import paramiko
+import time
+import sys
+import json
+
+def exec_ssh(ssh_hostname, ssh_cmd):
+	SSH_USERNAME = "root"
+	SSH_PASSWORD = "password"
+	SSH_KEY_FILE = "/root/.ssh/id_rsa"
+
+	ssh = paramiko.SSHClient()
+	ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+	ssh_stdin = ssh_stdout = ssh_stderr = None
+
+
+	try:
+	    #ssh.connect(SSH_ADDRESS, username=SSH_USERNAME, password=SSH_PASSWORD)
+	    ssh.connect(hostname=ssh_hostname, port=22, username=SSH_USERNAME, key_filename=SSH_KEY_FILE)
+	    ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(ssh_cmd, timeout=None, bufsize=-1, get_pty=False, environment=None)
+	except Exception as e:
+	    sys.stderr.write("SSH connection error: {0}".format(e))
+
+	output = ssh_stdout.read()
+
+	return output
+
+
+if __name__ == '__main__':
+	output_bridge = exec_ssh("pub-compute-001", "ovs-vsctl -f json list br")
+	output_port = exec_ssh("pub-compute-001", "ovs-vsctl -f json list port")
+	output_interface = exec_ssh("pub-compute-001", "ovs-vsctl -f json list interface")
+
+#	json_data_bridge = json.loads(output_bridge)
+#	for item in json_data_bridge['data']:
+#		br_uuid = item[0]
+#		br_name = item[13]
+#		br_ports = item[16]
+#		#print(br_name)
+#		#print(br_ports)
+
+	json_data_interface = json.loads(output_interface)
+	for item in json_data_interface['data']:
+		if_uuid = item[0]
+		if_name = item[26]
+		if_type = item[33]
+		if_external_ids = item[13][1]
+		if_external_ids_attached_mac = if_external_ids_iface_id = if_external_ids_iface_status = if_external_ids_vm_uuid = None
+		if len(if_external_ids) > 0:
+			if_external_ids_attached_mac = if_external_ids[0][1]
+			if_external_ids_iface_id = if_external_ids[1][1]
+			if_external_ids_iface_status = if_external_ids[2][1]
+			if len(if_external_ids) > 3:
+				if_external_ids_vm_uuid = if_external_ids[3][1]
+		if_link_speed = item[19]
+		if_link_state = item[20]
+		if_mtu = item[24]
+		print(if_name)
+		if if_type == "vxlan":
+			if_options = item[29][1]
+			print(if_options)
+
+#	json_data_port = json.loads(output_port)
+#	for item in json_data_port['data']:
+#		port_uuid = item[0]
+#		port_name = item[11]
+#		port_interfaces = item[8]
+#		print(port_name)
+#		print(port_interfaces)

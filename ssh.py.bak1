@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+# -*- mode:python; coding:utf-8 -*-
+
+import paramiko
+import time
+import sys
+
+
+def disable_paging(remote_conn):
+    '''Disable paging on a Cisco router'''
+
+    remote_conn.send("terminal length 0\n")
+    time.sleep(1)
+
+    # Clear the buffer on the screen
+    output = remote_conn.recv(1000)
+
+    return output
+
+
+def exec_ssh(ssh_hostname, ssh_cmd):
+	SSH_USERNAME = "root"
+	SSH_PASSWORD = "password"
+	SSH_KEY_FILE = "/root/.ssh/id_rsa"
+
+	ssh = paramiko.SSHClient()
+	ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+	ssh_stdin = ssh_stdout = ssh_stderr = None
+
+
+	try:
+	    #ssh.connect(SSH_ADDRESS, username=SSH_USERNAME, password=SSH_PASSWORD)
+	    ssh.connect(hostname=ssh_hostname, port=22, username=SSH_USERNAME, key_filename=SSH_KEY_FILE)
+	    ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(ssh_cmd, timeout=None, bufsize=-1, get_pty=False, environment=None)
+	except Exception as e:
+	    sys.stderr.write("SSH connection error: {0}".format(e))
+
+	output = []
+
+	if ssh_stdout:
+	    output = [line.rstrip('\n') for line in ssh_stdout.readlines()]
+
+	return output
+
+if __name__ == '__main__':
+	bridges = exec_ssh("pub-compute-001", "ovs-vsctl list-br")
+
+
+	for br in bridges:
+		print(br)
+		ports = exec_ssh("pub-compute-001", "ovs-vsctl list-ports %s" % br)
+		for port in ports:
+			print(port)
