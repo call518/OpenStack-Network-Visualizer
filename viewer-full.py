@@ -58,7 +58,7 @@ if __name__ == '__main__':
 	result = []
 
 	hostnames = (
-#		"pub-network-001",
+		"pub-network-001",
 #		"pub-network-002",
 		"pub-compute-001",
 		"pub-compute-002",
