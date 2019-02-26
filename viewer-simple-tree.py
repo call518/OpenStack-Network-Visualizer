@@ -397,3 +397,5 @@ if __name__ == '__main__':
 
 	print("Creating Image........")
 	plt.savefig("/var/www/html/OpenStack-Network-Connectivity.png", format = "png", dpi = 1200)
+
+	print(nx.info(G))

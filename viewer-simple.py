@@ -343,3 +343,22 @@ if __name__ == '__main__':
 
 	print("Creating Image........")
 	plt.savefig("/var/www/html/OpenStack-Network-Connectivity.png", format = "png", dpi = 1200)
+
+#### (참고용) ########################################################
+
+	## 그래프 정보 출력
+	print(nx.info(G))
+
+	## 그래프 밀도 출력 (0~1 사이 값으로, 1은 최대 밀도)
+	print("Network density:", nx.density(G))
+
+	## 최단 경로 찾기 예제
+	fell_whitehead_path = nx.shortest_path(G, source="I:qvoeee4966d-68", target="I:vxlan-0a00e8ae(pub-compute-001)")
+	print("Shortest path between Fell and Whitehead:", fell_whitehead_path)
+
+	## 노드별 중요도(중심성) 측정
+	degree_dict = dict(G.degree(G.nodes()))
+	sorted_degree = sorted(degree_dict.items(), key=operator.itemgetter(1), reverse=True)
+	print("Top 20 nodes by degree:")
+	for d in sorted_degree[:20]:
+		print(d)
