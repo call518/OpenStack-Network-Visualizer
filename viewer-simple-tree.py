@@ -107,9 +107,9 @@ if __name__ == '__main__':
 	result = []
 
 	hostnames = (
-#		"pub-network-001",
+		"pub-network-001",
 #		"pub-network-002",
-		"pub-compute-001",
+#		"pub-compute-001",
 #		"pub-compute-002",
 #		"pub-compute-003",
 #		"pub-compute-004",
@@ -351,8 +351,10 @@ if __name__ == '__main__':
 	##pos = hierarchy_pos(G, "b:br-ex(pub-compute-001)")
 
 	#pos = hierarchy_pos(G)
+	#pos = hierarchy_pos(G, "P:br-ex(pub-network-001)")
 	#pos = hierarchy_pos(G, "P:br-ex(pub-compute-001)")
-	pos_tmp = hierarchy_pos(G, "P:br-ex(pub-compute-001)")
+	pos_tmp = hierarchy_pos(G, "P:br-ex(pub-network-001)")
+	#pos_tmp = hierarchy_pos(G, "P:br-ex(pub-compute-001)")
 	pos = {u:(r*math.cos(theta),r*math.sin(theta)) for u, (theta, r) in pos_tmp.items()}
 
 	## 노드 겹침 회희 레이아웃::kamada kawai (주의: 노드가 많을 경우, 시간이 오래 걸림)
