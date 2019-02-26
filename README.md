@@ -2,4 +2,4 @@
 Visualizer OpenStack Network Connectivity
 
 # Screen Shots
-![ScreenShot](README/Ex-OpenStack-Network-Connectivity.png?raw=true)
+![ScreenShot](README/Ex-OpenStack-Network-Connectivity.png)
