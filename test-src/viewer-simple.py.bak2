@@ -59,7 +59,7 @@ if __name__ == '__main__':
 	result = []
 
 	hostnames = (
-		"pub-network-001",
+#		"pub-network-001",
 #		"pub-network-002",
 		"pub-compute-001",
 #		"pub-compute-002",
@@ -295,7 +295,7 @@ if __name__ == '__main__':
 
 	## 레이아웃 정의
 	##pos = nx.shell_layout(G)  # positions for all nodes
-	pos = nx.spring_layout(G, k=0.05, iterations=20)  # positions for all nodes
+	pos = nx.spring_layout(G, k=0.05, iterations=40)  # positions for all nodes
 	##pos = nx.spring_layout(G, iterations=50)
 	##pos = nx.spectral_layout(G, scale=2)  # positions for all nodes
 	##pos = nx.circular_layout(G)  # positions for all nodes
