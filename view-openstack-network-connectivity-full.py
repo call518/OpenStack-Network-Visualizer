@@ -12,7 +12,6 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
 import random
-import re
 
 def exec_ssh(ssh_hostname, ssh_cmd):
 	SSH_USERNAME = "root"
@@ -59,12 +58,12 @@ if __name__ == '__main__':
 	result = []
 
 	hostnames = (
-#		"pub-network-001",
-#		"pub-network-002",
+		"pub-network-001",
+		#"pub-network-002",
 		"pub-compute-001",
 		"pub-compute-002",
-#		"pub-compute-003",
-#		"pub-compute-004",
+		#"pub-compute-003",
+		#"pub-compute-004",
 	)
 
 	for hostname in hostnames:
@@ -227,13 +226,6 @@ if __name__ == '__main__':
 	#print(G.nodes.data())
 	#print(G.nodes())
 	#print(G.edges())
-#	for node in G.nodes.data():
-#		node_name = node[0]
-#		node_data = node[1]
-#		if node_name.startswith("I:"):
-#			G.remove_node(node_name)
-	#print(G.nodes())
-	#sys.exit(1)
 
 	## 기본 레이아웃
 	#pos = nx.shell_layout(G)  # positions for all nodes
@@ -273,23 +265,25 @@ if __name__ == '__main__':
 	#print(vxlan_link_dict)
 
 	## if_type 속성에 따른 Node 및 Edge 목록 생성
-	nodes_port_patch = []
-	nodes_port_vxlan = []
-	nodes_port_internal = []
-
-	edges_patch_port = []
-	edges_vxlan_port = []
+	nodes_if_type_patch = []
+	nodes_if_type_vxlan = []
+	nodes_if_type_internal = []
+	nodes_if_type_normal = []
+	edge_if_type_patch = []
+	edge_if_type_vxlan = []
 	for node_data in G.nodes(data=True):
 		if_name = node_data[0]
 		data_dict = node_data[1]
 		if len(data_dict) > 0:
 			if_type = data_dict['if_type']
 			if if_type == "patch":
-				port_name = re.sub(r'I:', 'P:', if_name)
-				port_peer_name = "P:" + data_dict['if_options_patch_peer'] + "(" + hostname + ")"
-				nodes_port_patch.append(port_name)
-				edges_patch_port.append((port_name, port_peer_name))
+				nodes_if_type_patch.append(if_name)
+				peer_if_hostname = data_dict['if_hostname']
+				peer_if_name = "I:" + data_dict['if_options_patch_peer'] + "(" + peer_if_hostname + ")"
+				edge_if_type_patch.append((if_name, peer_if_name))
+				
 			elif if_type == "vxlan":
+				nodes_if_type_vxlan.append(if_name)
 				vxlan_local_ip = data_dict['if_options_vxlan_local_ip']
 				vxlan_local_hostname = socket.gethostbyaddr(vxlan_local_ip)[0]
 				vxlan_remote_ip = data_dict['if_options_vxlan_remote_ip']
@@ -297,30 +291,15 @@ if __name__ == '__main__':
 				if vxlan_remote_hostname in hostnames:
 					find_key = vxlan_remote_hostname + "---" + vxlan_local_hostname
 					remote_if_name = vxlan_link_dict[find_key]
-					port_name = re.sub(r'I:', 'P:', if_name)
-					port_name_remote = re.sub(r'I:', 'P:', remote_if_name)
-					nodes_port_vxlan.append(port_name)
-					edges_vxlan_port.append((port_name, port_name_remote))
+					#sys.exit(1)
+					edge_if_type_vxlan.append((if_name, remote_if_name))
 			elif if_type == "internal":
-				port_name = re.sub(r'I:', 'P:', if_name)
-				nodes_port_internal.append(port_name)
-			else:
-				continue
+				nodes_if_type_internal.append(if_name)
+		else:
+			nodes_if_type_normal.append(if_name)
 
-#	print(nodes_port_vxlan)
-#	print(G.nodes())
-#	print(removeDup(edges_vxlan_port))
-#	print(edges_patch_port)
-#	print(removeDup(edges_patch_port))
-
-	#print(G.nodes())
-	remove_nodes = []
-	for node in G.nodes():
-		#if node in nodes_port_patch + nodes_port_vxlan + nodes_port_internal:
-		if node not in nodes_port + nodes_bridge:
-			remove_nodes.append(node)
-	for removeNode in remove_nodes:
-		G.remove_node(removeNode)
+	## Interface Node 그리기
+	nx.draw_networkx_nodes(G, pos, nodelist=nodes_interface, with_labels=True, node_size=node_szie, node_shape='o', node_color='#F972FF', alpha=0.5, linewidths=1)
 
 	## Port Node 그리기
 	nx.draw_networkx_nodes(G, pos, nodelist=nodes_port, with_labels=True, node_size=node_szie, node_shape='o', node_color='#72B2FF', alpha=0.5, linewidths=1)
@@ -328,19 +307,27 @@ if __name__ == '__main__':
 	## Bridge Node 그리기
 	nx.draw_networkx_nodes(G, pos, nodelist=nodes_bridge, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF5634', alpha=0.5, linewidths=1)
 
-	## Interface/Port/Bridge Edge 목록 생성
-	edge_P2B = [(u, v) for (u, v) in G.edges() if (u.startswith("P:") and v.startswith("B:")) or (u.startswith("B:") and v.startswith("P:"))]
+	## Patch 타입 노드 추가 표시 (색상 변경)
+	nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_patch, with_labels=True, node_size=node_szie, node_shape='o', node_color='#279700', alpha=0.5, linewidths=1)
 
-	## Edge 그리기
-	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edge_P2B), width=0.3, alpha=0.5, edge_color='#2ECC71')
-	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edges_patch_port), width=1, alpha=0.5, edge_color='#00FFE8', style="dashed")
-	#print(removeDup(edges_patch_port))
-	for i in removeDup(edges_patch_port):
-		print(i)
-	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edges_vxlan_port), width=2, alpha=0.5, edge_color='#FFF818', style="dashed")
+	## VxLAN 타입 노드 추가 표시 (색상 변경)
+	nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_vxlan, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF990F', alpha=0.5, linewidths=1)
+
+	## Internal 타입 노드 추가 표시 (색상 변경)
+	nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_internal, with_labels=True, node_size=node_szie, node_shape='o', node_color='#382000', alpha=0.5, linewidths=1)
 
 	## Interface/Port/Bridge Node Label 그리기
 	nx.draw_networkx_labels(G, pos, font_size=1, font_family='sans-serif')
+
+	## Interface/Port/Bridge Edge 목록 생성 (중복 존재 가능)
+	edge_I2P = [(u, v) for (u, v) in G.edges() if (u.startswith("I:") and v.startswith("P:")) or (u.startswith("P:") and v.startswith("I:"))]
+	edge_P2B = [(u, v) for (u, v) in G.edges() if (u.startswith("P:") and v.startswith("B:")) or (u.startswith("B:") and v.startswith("P:"))]
+
+	## Edge 그리기
+	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edge_I2P), width=0.1, alpha=0.5, edge_color='#E67E22')
+	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edge_P2B), width=0.3, alpha=0.5, edge_color='#2ECC71')
+	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edge_if_type_patch), width=1, alpha=0.5, edge_color='#00FFE8', style="dashed")
+	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edge_if_type_vxlan), width=2, alpha=0.5, edge_color='#FFF818', style="dashed")
 
 	plt.axis('off')
 
@@ -350,6 +337,7 @@ if __name__ == '__main__':
 
 	print("Creating GEXF.........")
 	nx.write_gexf(G, "/var/www/html/OpenStack-Network-Connectivity.gexf")
+	#nx.write_gexf(G, "/var/www/html/OpenStack-Network-Connectivity.gexf", version="1.2draft")
 
 	print("Creating Image........")
 	plt.savefig("/var/www/html/OpenStack-Network-Connectivity.png", format = "png", dpi = 1200)
