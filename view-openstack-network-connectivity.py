@@ -284,11 +284,12 @@ if __name__ == '__main__':
 		data_dict = node_data[1]
 		if len(data_dict) > 0:
 			if_type = data_dict['if_type']
+			if_hostname = data_dict['if_hostname']
 			if if_type == "patch":
 				port_name = re.sub(r'I:', 'P:', if_name)
-				port_peer_name = "P:" + data_dict['if_options_patch_peer'] + "(" + hostname + ")"
+				port_name_peer = "P:" + data_dict['if_options_patch_peer'] + "(" + if_hostname + ")"
 				nodes_port_patch.append(port_name)
-				edges_patch_port.append((port_name, port_peer_name))
+				edges_patch_port.append((port_name, port_name_peer))
 			elif if_type == "vxlan":
 				vxlan_local_ip = data_dict['if_options_vxlan_local_ip']
 				vxlan_local_hostname = socket.gethostbyaddr(vxlan_local_ip)[0]
@@ -307,13 +308,6 @@ if __name__ == '__main__':
 			else:
 				continue
 
-#	print(nodes_port_vxlan)
-#	print(G.nodes())
-#	print(removeDup(edges_vxlan_port))
-#	print(edges_patch_port)
-#	print(removeDup(edges_patch_port))
-
-	#print(G.nodes())
 	remove_nodes = []
 	for node in G.nodes():
 		#if node in nodes_port_patch + nodes_port_vxlan + nodes_port_internal:
@@ -334,9 +328,6 @@ if __name__ == '__main__':
 	## Edge 그리기
 	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edge_P2B), width=0.3, alpha=0.5, edge_color='#2ECC71')
 	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edges_patch_port), width=1, alpha=0.5, edge_color='#00FFE8', style="dashed")
-	#print(removeDup(edges_patch_port))
-	for i in removeDup(edges_patch_port):
-		print(i)
 	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edges_vxlan_port), width=2, alpha=0.5, edge_color='#FFF818', style="dashed")
 
 	## Interface/Port/Bridge Node Label 그리기
