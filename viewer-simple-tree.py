@@ -99,8 +99,6 @@ def hierarchy_pos(G, root=None, width=1., vert_gap = 0.2, vert_loc = 0, xcenter 
 
 if __name__ == '__main__':
 
-	node_szie = 10
-
 	###############################################
 	### Raw 데이터 생성
 	###############################################
@@ -330,6 +328,18 @@ if __name__ == '__main__':
 				port_name_with_if_link_state_down = re.sub(r'I:', 'P:', if_name)
 				nodes_if_link_state_down.append(port_name_with_if_link_state_down)
 
+	## Port/Bridge Edge 목록 생성
+	edge_P2B = [(u, v) for (u, v) in G.edges() if (u.startswith("P:") and v.startswith("B:")) or (u.startswith("B:") and v.startswith("P:"))]
+
+	## 순서와 무관하게 중복 제거 처리
+	edge_P2B = removeDup(edge_P2B)
+	edges_patch_port = removeDup(edges_patch_port)
+	edges_vxlan_port = removeDup(edges_vxlan_port)
+
+	## Patch Edge 목록을 G 객체에 통합
+	G.add_edges_from(edges_patch_port)
+	G.add_edges_from(edges_vxlan_port)
+
 	## 간소화를 위해 Interface 노드 삭제 (Bridge, Port 목록에 없으면 삭제)
 	remove_nodes = []
 	for node in G.nodes():
@@ -337,9 +347,6 @@ if __name__ == '__main__':
 			remove_nodes.append(node)
 	for removeNode in remove_nodes:
 		G.remove_node(removeNode)
-
-	## Patch Edge 목록을 G 객체에 통합
-	G.add_edges_from(removeDup(edges_patch_port))
 
 	## 레이아웃 정의
 	##pos = nx.shell_layout(G)  # positions for all nodes
@@ -365,6 +372,9 @@ if __name__ == '__main__':
 	#df = df.fillna(df.max().max())
 	#pos = nx.kamada_kawai_layout(G, dist=df.to_dict())
 
+	## Default Node 사이즈
+	node_szie = 10
+
 	## Port Node 그리기
 	nx.draw_networkx_nodes(G, pos, nodelist=nodes_port, with_labels=True, node_size=node_szie, node_shape='o', node_color='#72B2FF', alpha=0.5, linewidths=1)
 
@@ -375,13 +385,10 @@ if __name__ == '__main__':
 	## 미사용 (OVS의 link_state값이 정확하지 않음. namespace에 속한 Interface의 상태 체크 못하는 것으로 추정)
 	#nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_link_state_down, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF0000', alpha=0.5, linewidths=1)
 
-	## Port/Bridge Edge 목록 생성
-	edge_P2B = [(u, v) for (u, v) in G.edges() if (u.startswith("P:") and v.startswith("B:")) or (u.startswith("B:") and v.startswith("P:"))]
-
 	## Edge 그리기
-	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edge_P2B), width=0.3, alpha=0.5, edge_color='#2ECC71')
-	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edges_patch_port), width=1, alpha=0.5, edge_color='#00FFE8')
-	nx.draw_networkx_edges(G, pos, edgelist=removeDup(edges_vxlan_port), width=2, alpha=0.5, edge_color='#FFF818')
+	nx.draw_networkx_edges(G, pos, edgelist=edge_P2B, width=0.3, alpha=0.5, edge_color='#2ECC71')
+	nx.draw_networkx_edges(G, pos, edgelist=edges_patch_port, width=1, alpha=0.5, edge_color='#00FFE8')
+	nx.draw_networkx_edges(G, pos, edgelist=edges_vxlan_port, width=2, alpha=0.5, edge_color='#FFF818')
 
 	## Interface/Port/Bridge Node Label 그리기
 	nx.draw_networkx_labels(G, pos, font_size=1, font_family='sans-serif')
@@ -398,4 +405,20 @@ if __name__ == '__main__':
 	print("Creating Image........")
 	plt.savefig("/var/www/html/OpenStack-Network-Connectivity.png", format = "png", dpi = 1200)
 
-	print(nx.info(G))
+#### (참고용) ########################################################
+#	## 그래프 정보 출력
+#	print(nx.info(G))
+#
+#	## 그래프 밀도 출력 (0~1 사이 값으로, 1은 최대 밀도)
+#	print("Network density:", nx.density(G))
+#
+#	## 최단 경로 찾기 예제
+#	fell_whitehead_path = nx.shortest_path(G, source="I:qvoeee4966d-68", target="I:vxlan-0a00e8ae(pub-compute-001)")
+#	print("Shortest path between Fell and Whitehead:", fell_whitehead_path)
+#
+#	## 노드별 중요도(중심성) 측정
+#	degree_dict = dict(G.degree(G.nodes()))
+#	sorted_degree = sorted(degree_dict.items(), key=operator.itemgetter(1), reverse=True)
+#	print("Top 20 nodes by degree:")
+#	for d in sorted_degree[:20]:
+#		print(d)
