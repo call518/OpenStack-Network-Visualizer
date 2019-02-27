@@ -311,7 +311,7 @@ if __name__ == '__main__':
 	#pos = hierarchy_pos(G)
 
 	## 노드 겹침 회희 레이아웃::kamada kawai (주의: 노드가 많을 경우, 시간이 오래 걸림)
-	#df = pd.dataframe(index=G.nodes(), columns=G.nodes())
+	#df = pd.DataFrame(index=G.nodes(), columns=G.nodes())
 	#for row, data in nx.shortest_path_length(G):
 	#    for col, dist in data.items():
 	#        df.loc[row,col] = dist
@@ -337,7 +337,7 @@ if __name__ == '__main__':
 	nx.draw_networkx_edges(G, pos, edgelist=edges_vxlan_port, width=2, alpha=0.5, edge_color='#FFF818')
 
 	## Interface/Port/Bridge Node Label 그리기
-	nx.draw_networkx_labels(G, pos, font_size=1, font_family='sans-serif')
+	nx.draw_networkx_labels(G, pos, font_size=1, font_family='sans-serif', alpha=0.5)
 
 	plt.axis('off')
 

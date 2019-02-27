@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- mode:python; coding:utf-8 -*-
 
+## ex) python viewer-full-shortest-path.py --src I:qvo1623b069-e5 --dst I:qvob6a8f706-db
+
 import paramiko
 import time
 import sys, getopt
@@ -390,6 +392,14 @@ if __name__ == '__main__':
 	#pos = nx.circular_layout(G)  # positions for all nodes
 	#pos = nx.random_layout(G)  # positions for all node
 
+	## 노드 겹침 회희 레이아웃::kamada kawai (주의: 노드가 많을 경우, 시간이 오래 걸림)
+	#df = pd.DataFrame(index=G.nodes(), columns=G.nodes())
+	#for row, data in nx.shortest_path_length(G):
+	#    for col, dist in data.items():
+	#        df.loc[row,col] = dist
+	#df = df.fillna(df.max().max())
+	#pos = nx.kamada_kawai_layout(G, dist=df.to_dict())
+
 	## Default Node 사이즈
 	node_szie = 100
 
@@ -416,7 +426,7 @@ if __name__ == '__main__':
 	#nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_link_state_down, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF0000', alpha=0.5, linewidths=1)
 
 	## Interface/Port/Bridge Node Label 그리기
-	nx.draw_networkx_labels(G, pos, font_size=3, font_family='sans-serif')
+	nx.draw_networkx_labels(G, pos, font_size=3, font_family='sans-serif', alpha=0.5)
 
 	## Edge 그리기
 	nx.draw_networkx_edges(G, pos, edgelist=edge_I2P, width=1, alpha=0.5, edge_color='#E67E22')

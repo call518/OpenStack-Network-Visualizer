@@ -297,24 +297,23 @@ if __name__ == '__main__':
 	G.add_edges_from(edge_if_type_vxlan)
 
 	## 레이아웃 정의
-	##pos = nx.shell_layout(G)  # positions for all nodes
-	pos = nx.spring_layout(G, k=0.05, iterations=40)  # positions for all nodes
-	##pos = nx.spring_layout(G, iterations=50)
-	##pos = nx.spectral_layout(G, scale=2)  # positions for all nodes
-	##pos = nx.circular_layout(G)  # positions for all nodes
-	##pos = nx.random_layout(G)  # positions for all nodes
-	##pos = hierarchy_pos(G, "b:br-ex(pub-compute-001)")
+	#pos = nx.shell_layout(G)  # positions for all nodes
+	#pos = nx.spring_layout(G, k=0.05, iterations=50)  # positions for all nodes
+	#pos = nx.spring_layout(G, iterations=50)
+	#pos = nx.spectral_layout(G, scale=2)  # positions for all nodes
+	#pos = nx.circular_layout(G)  # positions for all nodes
+	#pos = nx.random_layout(G)  # positions for all nodes
 
 	## 노드 겹침 회희 레이아웃::kamada kawai (주의: 노드가 많을 경우, 시간이 오래 걸림)
-	#df = pd.dataframe(index=G.nodes(), columns=G.nodes())
-	#for row, data in nx.shortest_path_length(G):
-	#    for col, dist in data.items():
-	#        df.loc[row,col] = dist
-	#df = df.fillna(df.max().max())
-	#pos = nx.kamada_kawai_layout(G, dist=df.to_dict())
+	df = pd.DataFrame(index=G.nodes(), columns=G.nodes())
+	for row, data in nx.shortest_path_length(G):
+	    for col, dist in data.items():
+	        df.loc[row,col] = dist
+	df = df.fillna(df.max().max())
+	pos = nx.kamada_kawai_layout(G, dist=df.to_dict())
 
 	## Default Node 사이즈
-	node_szie = 10
+	node_szie = 3
 
 	## Interface Node 그리기
 	nx.draw_networkx_nodes(G, pos, nodelist=nodes_interface, with_labels=True, node_size=node_szie, node_shape='o', node_color='#F972FF', alpha=0.5, linewidths=1)
@@ -339,13 +338,13 @@ if __name__ == '__main__':
 	#nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_link_state_down, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF0000', alpha=0.5, linewidths=1)
 
 	## Interface/Port/Bridge Node Label 그리기
-	nx.draw_networkx_labels(G, pos, font_size=1, font_family='sans-serif')
+	nx.draw_networkx_labels(G, pos, font_size=1, font_family='sans-serif', alpha=0.5)
 
 	## Edge 그리기
 	nx.draw_networkx_edges(G, pos, edgelist=edge_I2P, width=0.1, alpha=0.5, edge_color='#E67E22')
-	nx.draw_networkx_edges(G, pos, edgelist=edge_P2B, width=0.3, alpha=0.5, edge_color='#2ECC71')
-	nx.draw_networkx_edges(G, pos, edgelist=edge_if_type_patch, width=1, alpha=0.5, edge_color='#00FFE8')
-	nx.draw_networkx_edges(G, pos, edgelist=edge_if_type_vxlan, width=2, alpha=0.5, edge_color='#FFF818')
+	nx.draw_networkx_edges(G, pos, edgelist=edge_P2B, width=0.2, alpha=0.5, edge_color='#2ECC71')
+	nx.draw_networkx_edges(G, pos, edgelist=edge_if_type_patch, width=0.8, alpha=0.5, edge_color='#00FFE8')
+	nx.draw_networkx_edges(G, pos, edgelist=edge_if_type_vxlan, width=1, alpha=0.5, edge_color='#FFF818')
 
 	plt.axis('off')
 
