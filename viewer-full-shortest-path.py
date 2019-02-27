@@ -3,6 +3,8 @@
 
 ## ex) python viewer-full-shortest-path.py --src I:qvo1623b069-e5 --dst I:qvob6a8f706-db
 
+import warnings
+warnings.filterwarnings("ignore")
 import paramiko
 import time
 import sys, getopt

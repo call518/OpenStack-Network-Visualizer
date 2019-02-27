@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- mode:python; coding:utf-8 -*-
 
+import warnings
+warnings.filterwarnings("ignore")
 import paramiko
 import time
 import sys

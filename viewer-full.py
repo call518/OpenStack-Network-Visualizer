@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- mode:python; coding:utf-8 -*-
 
+import warnings
+warnings.filterwarnings("ignore")
 import paramiko
 import time
 import sys, getopt
@@ -57,12 +59,12 @@ if __name__ == '__main__':
 	result = []
 
 	hostnames = (
-		"pub-network-001",
-		"pub-network-002",
+#		"pub-network-001",
+#		"pub-network-002",
 		"pub-compute-001",
 		"pub-compute-002",
-#		"pub-compute-003",
-#		"pub-compute-004",
+		"pub-compute-003",
+		"pub-compute-004",
 	)
 
 	for hostname in hostnames:
@@ -303,14 +305,18 @@ if __name__ == '__main__':
 	#pos = nx.spectral_layout(G, scale=2)  # positions for all nodes
 	#pos = nx.circular_layout(G)  # positions for all nodes
 	#pos = nx.random_layout(G)  # positions for all nodes
+	pos = nx.kamada_kawai_layout(G)
 
 	## 노드 겹침 회희 레이아웃::kamada kawai (주의: 노드가 많을 경우, 시간이 오래 걸림)
-	df = pd.DataFrame(index=G.nodes(), columns=G.nodes())
-	for row, data in nx.shortest_path_length(G):
-	    for col, dist in data.items():
-	        df.loc[row,col] = dist
-	df = df.fillna(df.max().max())
-	pos = nx.kamada_kawai_layout(G, dist=df.to_dict())
+	#df = pd.DataFrame(index=G.nodes(), columns=G.nodes())
+	#for row, data in nx.shortest_path_length(G):
+	#    for col, dist in data.items():
+	#        df.loc[row,col] = dist
+	#df = df.fillna(df.max().max())
+	#pos = nx.kamada_kawai_layout(G, dist=df.to_dict())
+
+	#print(pos)
+	#sys.exit(1)
 
 	## Default Node 사이즈
 	node_szie = 3
