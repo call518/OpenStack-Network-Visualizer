@@ -25,7 +25,7 @@
  * P: Port
  * I: Interface
 
-### Full
+### Full (Main Module)
 
 * 생략 정보 없이 전체 구조 조망.
 * 대상 규모 조정. (hostnames 리스트 조정)
