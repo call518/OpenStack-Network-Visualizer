@@ -16,6 +16,8 @@ import pandas as pd
 import random
 import operator
 
+import plotly
+#plotly.tools.set_credentials_file(username='your-account', api_key='your-api-key')
 import plotly.plotly as py
 import plotly.graph_objs as go
 
