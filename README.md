@@ -6,12 +6,12 @@
 
 # Screen Shots
 
+![ScreenShot](README/Ex1-OpenStack-Network-Connectivity.png?raw=true)
+![ScreenShot](README/Ex2-OpenStack-Network-Connectivity.png?raw=true)
+
 <div>
     <a href="https://plot.ly/~call518/0/?share_key=8311TGGGOaQIdsOFp8LG1L" target="_blank" title="networkx" style="display: block; text-align: center;"><img src="https://plot.ly/~call518/0.png?share_key=8311TGGGOaQIdsOFp8LG1L" alt="networkx" style="max-width: 100%;width: 100%;"  width="100%" onerror="this.onerror=null;this.src='https://plot.ly/404.png';" /></a>
 </div>
-
-![ScreenShot](README/Ex1-OpenStack-Network-Connectivity.png?raw=true)
-![ScreenShot](README/Ex2-OpenStack-Network-Connectivity.png?raw=true)
 
 # Tutorial
 
