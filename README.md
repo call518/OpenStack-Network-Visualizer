@@ -5,7 +5,10 @@
 (Note) Current phase is prototype.
 
 # Screen Shots
-<iframe width="900" height="800" frameborder="0" scrolling="no" src="//plot.ly/~call518/0.embed"></iframe>
+<div>
+    <a href="https://plot.ly/~call518/0/?share_key=8311TGGGOaQIdsOFp8LG1L" target="_blank" title="networkx" style="display: block; text-align: center;"><img src="https://plot.ly/~call518/0.png?share_key=8311TGGGOaQIdsOFp8LG1L" alt="networkx" style="max-width: 100%;width: 600px;"  width="600" onerror="this.onerror=null;this.src='https://plot.ly/404.png';" /></a>
+    <script data-plotly="call518:0" sharekey-plotly="8311TGGGOaQIdsOFp8LG1L" src="https://plot.ly/embed.js" async></script>
+</div>
 ![ScreenShot](README/Ex1-OpenStack-Network-Connectivity.png?raw=true)
 ![ScreenShot](README/Ex2-OpenStack-Network-Connectivity.png?raw=true)
 
