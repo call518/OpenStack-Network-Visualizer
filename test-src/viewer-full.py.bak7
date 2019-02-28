@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import random
 import operator
-import re
 
 import plotly
 #plotly.tools.set_credentials_file(username='your-account', api_key='your-api-key')
@@ -62,9 +61,7 @@ if __name__ == '__main__':
 	###############################################
 	### Raw 데이터 생성
 	###############################################
-
 	result = []
-	result_linux_bridge = []
 
 	hostnames = (
 		"pub-network-001",
@@ -175,25 +172,6 @@ if __name__ == '__main__':
 				"if_br_uuid": if_br_uuid,
 				"if_br_name": if_br_name
 			})
-
-		## Linux Bridge 정보 조사
-		cmd = "BR_ARRAY=(`ip link list type bridge | awk '/^[0-9]/ {print $2}' | sed -e 's/:$//g'`); num_br=1; for br in ${BR_ARRAY[@]}; do if [ $num_br -eq 1 ]; then echo '['; fi; echo '{\"'$br'\": ['; IF_ARRAY=(`ls -1 /sys/devices/virtual/net/$br/brif/`); num=1; for if in ${IF_ARRAY[@]}; do echo '\"'$if'\"'; if [ $num -lt ${#IF_ARRAY[@]} ]; then echo ','; fi; ((num++)); done; echo ']}'; if [ $num_br -lt ${#BR_ARRAY[@]} ]; then echo ','; else echo ']'; fi; ((num_br++)); done | tr '\n' ' '"
-		output_linux_bridge = exec_ssh(hostname, cmd)
-		if len(output_linux_bridge) > 0:
-			output_linux_bridge = "{ \"hostname\": \"" + hostname + "\", \"data\": " + output_linux_bridge + "}"
-			json_data_linux_bridge = json.loads(output_linux_bridge)
-		else:
-			json_data_linux_bridge = json.loads('{ "hostname": "%s", "data": [] }' % hostname)
-
-		## Linux Bridge 목록 생성
-		for data in json_data_linux_bridge['data']:
-			for bridge, interfaces in data.items():
-				#print(bridge, interfaces)
-				result_linux_bridge.append({
-					"hostname": hostname,
-					"bridge_name": bridge, 
-					"interfaces": interfaces, 
-				})
 	
 	###############################################
 	### 이미지 생성 작업 시작
@@ -250,39 +228,6 @@ if __name__ == '__main__':
 			#G.add_edge(interface['if_name'], interface['if_port_name'])
 			#print(if_name, interface['if_options'])
 
-	## Linux Bridge 정보 'G'에 추가 (노드/엣지)
-	edge_VP2LB = []
-	edge_I2VP = []
-	edge_T2LB = []
-	for item in result_linux_bridge:
-		hostname = item['hostname']
-		br_name = "LB:" + item['bridge_name']
-		interfaces = item['interfaces']
-		G.add_node(br_name)
-		for interface in interfaces:
-			if interface.startswith("qvb"):
-				if_name = "VP:" + interface
-				if_name_ovs_pair = re.sub(r'^VP:qvb', 'I:qvo', if_name)
-				G.add_node(if_name)
-				G.add_edge(if_name_ovs_pair, if_name)
-				G.add_edge(if_name, br_name)
-				edge_VP2LB.append((if_name, br_name))
-				edge_I2VP.append((if_name_ovs_pair, if_name))
-			elif interface.startswith("tap"):
-				if_name = "T:" + interface
-				G.add_node(if_name)
-				G.add_edge(if_name, br_name)
-				edge_T2LB.append((if_name, br_name))
-
-	#print(edge_VP2LB)
-	#print(edge_I2VP)
-	#print(edge_T2LB)
-	#sys.exit(1)
-
-	#print(G.nodes())
-	#print(G.edges())
-	#sys.exit(1)
-
 	#print(G.nodes.data())
 	#print(G.nodes())
 	#print(G.edges())
@@ -291,10 +236,6 @@ if __name__ == '__main__':
 	nodes_interface = [node for node in G.nodes() if node.startswith("I:")]
 	nodes_port = [node for node in G.nodes() if node.startswith("P:")]
 	nodes_bridge = [node for node in G.nodes() if node.startswith("B:")]
-	nodes_linux_bridge = [node for node in G.nodes() if node.startswith("LB:")]
-	nodes_linux_interface_pair = [node for node in G.nodes() if node.startswith("VP:")]
-	nodes_linux_interface_tap = [node for node in G.nodes() if node.startswith("T:")]
-
 
 	## VxLAN 터널 링크 정보 Dictionay 생성
 	vxlan_link_dict = {}
@@ -354,12 +295,10 @@ if __name__ == '__main__':
 	edge_P2B = [(u, v) for (u, v) in G.edges() if (u.startswith("P:") and v.startswith("B:")) or (u.startswith("B:") and v.startswith("P:"))]
 
 	## 순서와 무관하게 중복 제거 처리
-	edge_I2P = removeDup(edge_I2P)
-	edge_P2B = removeDup(edge_P2B)
-	edge_VP2LB = removeDup(edge_VP2LB)
-	edge_I2VP = removeDup(edge_I2VP)
-	edge_if_type_patch = removeDup(edge_if_type_patch)
-	edge_if_type_vxlan = removeDup(edge_if_type_vxlan)
+	edge_I2P=removeDup(edge_I2P)
+	edge_P2B=removeDup(edge_P2B)
+	edge_if_type_patch=removeDup(edge_if_type_patch)
+	edge_if_type_vxlan=removeDup(edge_if_type_vxlan)
 
 	## Patch Edge 목록을 G 객체에 통합
 	G.add_edges_from(edge_if_type_patch)
@@ -394,15 +333,6 @@ if __name__ == '__main__':
 	## Bridge Node 그리기
 	nx.draw_networkx_nodes(G, pos, nodelist=nodes_bridge, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF5634', alpha=0.5, linewidths=1)
 
-	## Linux Interface Node 그리기 (veth pair)
-	nx.draw_networkx_nodes(G, pos, nodelist=nodes_linux_interface_pair, with_labels=True, node_size=node_szie, node_shape='o', node_color='#F972FF', alpha=0.5, linewidths=1)
-
-	## Linux Interface Node 그리기 (tap)
-	nx.draw_networkx_nodes(G, pos, nodelist=nodes_linux_interface_tap, with_labels=True, node_size=node_szie, node_shape='o', node_color='#7E7E7E', alpha=0.5, linewidths=1)
-
-	## Linux Bridge Node 그리기
-	nx.draw_networkx_nodes(G, pos, nodelist=nodes_linux_bridge, with_labels=True, node_size=node_szie, node_shape='o', node_color='#0C00A0', alpha=0.5, linewidths=1)
-
 	## Patch 타입 노드 업데이트 (색상 변경)
 	nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_patch, with_labels=True, node_size=node_szie, node_shape='o', node_color='#279700', alpha=0.5, linewidths=1)
 
@@ -424,9 +354,6 @@ if __name__ == '__main__':
 	nx.draw_networkx_edges(G, pos, edgelist=edge_P2B, width=0.2, alpha=0.5, edge_color='#2ECC71')
 	nx.draw_networkx_edges(G, pos, edgelist=edge_if_type_patch, width=0.8, alpha=0.5, edge_color='#00FFE8')
 	nx.draw_networkx_edges(G, pos, edgelist=edge_if_type_vxlan, width=1, alpha=0.5, edge_color='#FFF818')
-	nx.draw_networkx_edges(G, pos, edgelist=edge_I2VP, width=0.8, alpha=0.5, edge_color='#68FF66')
-	nx.draw_networkx_edges(G, pos, edgelist=edge_VP2LB, width=0.2, alpha=0.5, edge_color='#E67E22')
-	nx.draw_networkx_edges(G, pos, edgelist=edge_T2LB, width=0.2, alpha=0.5, edge_color='#E67E22')
 
 	plt.axis('off')
 
