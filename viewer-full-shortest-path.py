@@ -194,6 +194,7 @@ if __name__ == '__main__':
 	###############################################
 	### 이미지 생성 작업 시작
 	###############################################
+	#plt.figure(figsize=(10,10)) ## 캔버스 크기 증가
 	G = nx.Graph() 
 
 	for interface in result:
@@ -440,13 +441,13 @@ if __name__ == '__main__':
 
 	#plt.figure(figsize = (10,9))
 
-	plt.title("OpenStack Network Connectivity")
+	plt.title("OpenStack Network Connectivity - Full Shortest-Path")
 
 	print("Creating GEXF.........")
 	nx.write_gexf(G, "/var/www/html/OpenStack-Network-Connectivity.gexf")
 
 	print("Creating Image........")
-	plt.savefig("/var/www/html/OpenStack-Network-Connectivity.png", format = "png", dpi = 1200)
+	plt.savefig("/var/www/html/OpenStack-Network-Connectivity-Full-SP.png", format = "png", dpi = 1200)
 
 #### (참고용) ########################################################
 #	## 그래프 정보 출력

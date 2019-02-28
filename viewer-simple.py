@@ -60,11 +60,11 @@ if __name__ == '__main__':
 
 	hostnames = (
 		"pub-network-001",
-#		"pub-network-002",
+		"pub-network-002",
 		"pub-compute-001",
-#		"pub-compute-002",
-#		"pub-compute-003",
-#		"pub-compute-004",
+		"pub-compute-002",
+		"pub-compute-003",
+		"pub-compute-004",
 	)
 
 	for hostname in hostnames:
@@ -173,6 +173,7 @@ if __name__ == '__main__':
 	###############################################
 	### 이미지 생성 작업 시작
 	###############################################
+	plt.figure(figsize=(10,10)) ## 캔버스 크기 증가
 	G = nx.Graph() 
 
 	for interface in result:
@@ -304,13 +305,14 @@ if __name__ == '__main__':
 
 	## 레이아웃 정의
 	##pos = nx.shell_layout(G)  # positions for all nodes
-	pos = nx.spring_layout(G, k=0.05, iterations=20)  # positions for all nodes
+	#pos = nx.spring_layout(G, k=0.05, iterations=20)  # positions for all nodes
 	##pos = nx.spring_layout(G, iterations=50)
 	##pos = nx.spectral_layout(G, scale=2)  # positions for all nodes
 	##pos = nx.circular_layout(G)  # positions for all nodes
 	##pos = nx.random_layout(G)  # positions for all nodes
 	##pos = hierarchy_pos(G, "b:br-ex(pub-compute-001)")
 	#pos = hierarchy_pos(G)
+	pos = nx.kamada_kawai_layout(G)
 
 	## 노드 겹침 회희 레이아웃::kamada kawai (주의: 노드가 많을 경우, 시간이 오래 걸림)
 	#df = pd.DataFrame(index=G.nodes(), columns=G.nodes())
@@ -345,13 +347,13 @@ if __name__ == '__main__':
 
 	#plt.figure(figsize = (10,9))
 
-	plt.title("OpenStack Network Connectivity - Simple-Mode")
+	plt.title("OpenStack Network Connectivity - Simple")
 
 	print("Creating GEXF.........")
 	nx.write_gexf(G, "/var/www/html/OpenStack-Network-Connectivity.gexf")
 
 	print("Creating Image........")
-	plt.savefig("/var/www/html/OpenStack-Network-Connectivity.png", format = "png", dpi = 1200)
+	plt.savefig("/var/www/html/OpenStack-Network-Connectivity-Simple.png", format = "png", dpi = 1200)
 
 #### (참고용) ########################################################
 #	## 그래프 정보 출력

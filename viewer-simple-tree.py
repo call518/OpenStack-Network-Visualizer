@@ -107,9 +107,9 @@ if __name__ == '__main__':
 	result = []
 
 	hostnames = (
-		"pub-network-001",
+#		"pub-network-001",
 #		"pub-network-002",
-#		"pub-compute-001",
+		"pub-compute-001",
 #		"pub-compute-002",
 #		"pub-compute-003",
 #		"pub-compute-004",
@@ -359,11 +359,15 @@ if __name__ == '__main__':
 	##pos = nx.random_layout(G)  # positions for all nodes
 	##pos = hierarchy_pos(G, "b:br-ex(pub-compute-001)")
 
+	## Root 노드 찾기 (Default로 "br-ex" 브릿지를 검색)
+	#root_node = "B:br-ex(pub-network-001)"
+	#root_node = "B:br-ex(pub-compute-001)"
+	for node in G.nodes():
+		if node.startswith("B:br-ex("):
+			root_node = node
+	print " ===== Root Node: %s =====" % root_node
 	#pos = hierarchy_pos(G)
-	#pos = hierarchy_pos(G, "P:br-ex(pub-network-001)")
-	#pos = hierarchy_pos(G, "P:br-ex(pub-compute-001)")
-	pos_tmp = hierarchy_pos(G, "P:br-ex(pub-network-001)")
-	#pos_tmp = hierarchy_pos(G, "P:br-ex(pub-compute-001)")
+	pos_tmp = hierarchy_pos(G, root_node)
 	pos = {u:(r*math.cos(theta),r*math.sin(theta)) for u, (theta, r) in pos_tmp.items()}
 
 	## 노드 겹침 회희 레이아웃::kamada kawai (주의: 노드가 많을 경우, 시간이 오래 걸림)
@@ -399,13 +403,13 @@ if __name__ == '__main__':
 
 	#plt.figure(figsize = (10,9))
 
-	plt.title("OpenStack Network Connectivity - Simple-Mode")
+	plt.title("OpenStack Network Connectivity - Simple Tree")
 
 	print("Creating GEXF.........")
 	nx.write_gexf(G, "/var/www/html/OpenStack-Network-Connectivity.gexf")
 
 	print("Creating Image........")
-	plt.savefig("/var/www/html/OpenStack-Network-Connectivity.png", format = "png", dpi = 1200)
+	plt.savefig("/var/www/html/OpenStack-Network-Connectivity-Simple-Tree.png", format = "png", dpi = 1200)
 
 #### (참고용) ########################################################
 #	## 그래프 정보 출력

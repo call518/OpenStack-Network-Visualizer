@@ -59,8 +59,8 @@ if __name__ == '__main__':
 	result = []
 
 	hostnames = (
-#		"pub-network-001",
-#		"pub-network-002",
+		"pub-network-001",
+		"pub-network-002",
 		"pub-compute-001",
 		"pub-compute-002",
 		"pub-compute-003",
@@ -171,6 +171,7 @@ if __name__ == '__main__':
 	###############################################
 	### 이미지 생성 작업 시작
 	###############################################
+	plt.figure(figsize=(10,10)) ## 캔버스 크기 증가
 	G = nx.Graph() 
 
 	for interface in result:
@@ -356,7 +357,7 @@ if __name__ == '__main__':
 
 	#plt.figure(figsize = (10,9))
 
-	plt.title("OpenStack Network Connectivity")
+	plt.title("OpenStack Network Connectivity - Full")
 
 	print("Creating GEXF.........")
 	#nx.write_gexf(G, "/var/www/html/OpenStack-Network-Connectivity.gexf")
@@ -364,7 +365,7 @@ if __name__ == '__main__':
 	nx.write_gexf(G, "/var/www/html/OpenStack-Network-Connectivity.gexf", version="1.1draft")
 
 	print("Creating Image........")
-	plt.savefig("/var/www/html/OpenStack-Network-Connectivity.png", format = "png", dpi = 1200)
+	plt.savefig("/var/www/html/OpenStack-Network-Connectivity-Full.png", format = "png", dpi = 600)
 
 #### (참고용) ########################################################
 #	## 그래프 정보 출력
