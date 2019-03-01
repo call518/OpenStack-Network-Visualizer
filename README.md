@@ -8,6 +8,7 @@
 
 ![ScreenShot](README/Ex1-OpenStack-Network-Connectivity.png?raw=true)
 ![ScreenShot](README/Ex2-OpenStack-Network-Connectivity.png?raw=true)
+![ScreenShot](README/Ex3-OpenStack-Network-Connectivity.png?raw=true)
 
 <div>
     <a href="https://plot.ly/~call518/0/?share_key=8311TGGGOaQIdsOFp8LG1L" target="_blank" title="networkx" style="display: block; text-align: center;"><img src="https://plot.ly/~call518/0.png?share_key=8311TGGGOaQIdsOFp8LG1L" alt="networkx" style="max-width: 100%;width: 100%;"  width="100%" onerror="this.onerror=null;this.src='https://plot.ly/404.png';" /></a>
@@ -20,10 +21,13 @@
 * 모든 호스트들은 Key 기반 SSH 연결 허용.
 * VXLAN 연결 IP를 Hostname으로 질의 가능. (e.g /etc/hosts 등록)
 * 기본 그래프 파일 출력 경로 -> "/var/www/html/"
-* Headers
+* Headers (Types)
  * B: Bridge
  * P: Port
  * I: Interface
+ * VP: VETH Pair
+ * LB : Linux Bridge
+ * T: TAP Device
 
 ### Full (Main Module)
 
@@ -65,5 +69,4 @@
 
 * 코드 통합/정리.
 * Dash나 Plotly 연계하여 Dynamic한 시각화 지원.
-* 현재는 OVS만 지원하나, Linux-Bridge 상태까지 포함 필요.
-* Namespace 그룹 정보 반영 필요.
+* Namespace 정보 반영.
