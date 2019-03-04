@@ -525,7 +525,15 @@ if __name__ == '__main__':
 	#nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_link_state_down, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF0000', alpha=0.5, linewidths=1)
 
 	## Interface/Port/Bridge Node Label 그리기
-	nx.draw_networkx_labels(G, pos, font_size=1, font_family='sans-serif', alpha=0.5)
+	labels = {}
+	labels_sp = {}
+	for node in G.nodes():
+		if node not in shortest_path_list:
+			labels[node] = node
+		else:
+			labels_sp[node] = node
+	nx.draw_networkx_labels(G, pos, labels, font_size=1, font_family='sans-serif', alpha=0.1)
+	nx.draw_networkx_labels(G, pos, labels_sp, font_size=1.5, font_family='sans-serif', alpha=0.9)
 
 	## Edge 그리기
 	nx.draw_networkx_edges(G, pos, edgelist=edge_I2P, width=0.1, alpha=alpha_normal, edge_color='#E67E22')
