@@ -439,7 +439,7 @@ if __name__ == '__main__':
 	#nx.write_gexf(G, "/var/www/html/OpenStack-Network-Connectivity.gexf", version="1.1draft")
 
 	print("Creating Image........")
-	plt.savefig("/var/www/html/OpenStack-Network-Connectivity-Full.png", format = "png", dpi = 600)
+	plt.savefig("/var/www/html/OpenStack-Network-Connectivity-Full.png", format = "png", dpi = 1200)
 
 #### plot.ly 그래프 작성/전송 ########################################################
 	#G=nx.random_geometric_graph(200,0.125)
