@@ -9,6 +9,7 @@
 ![ScreenShot](README/Ex1-OpenStack-Network-Connectivity.png?raw=true)
 ![ScreenShot](README/Ex2-OpenStack-Network-Connectivity.png?raw=true)
 ![ScreenShot](README/Ex3-OpenStack-Network-Connectivity.png?raw=true)
+![ScreenShot](README/Ex4-OpenStack-Network-Connectivity.png?raw=true)
 
 <div>
     <a href="https://plot.ly/~call518/0/?share_key=8311TGGGOaQIdsOFp8LG1L" target="_blank" title="networkx" style="display: block; text-align: center;"><img src="https://plot.ly/~call518/0.png?share_key=8311TGGGOaQIdsOFp8LG1L" alt="networkx" style="max-width: 100%;width: 100%;"  width="100%" onerror="this.onerror=null;this.src='https://plot.ly/404.png';" /></a>
@@ -40,10 +41,18 @@
 
 ### Full - Shortest-Path
 
-* 특정 출발지와 도착지를 지정하여 최단 경로만을 표시.
+* 특정 출발지와 도착지를 지정하여 최단 경로를 Full 모드에 표시.
 
 ```bash
-# python viewer-full-shortest-path.py --src I:qvo1623b069-e5 --dst I:qvob6a8f706-db
+# python viewer-full-shortest-path.py --src T:tap94d54818-a5 --dst T:tap708a8386-2f
+```
+
+### Full - Shortest-Path (Only)
+
+* 특정 출발지와 도착지를 지정하여 최단 경로만을 표시. (이외 정보는 제거)
+
+```bash
+# python viewer-full-shortest-path-only.py --src T:tap94d54818-a5 --dst T:tap708a8386-2f
 ```
 
 ### Simple
