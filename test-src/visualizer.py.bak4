@@ -28,7 +28,6 @@ import pandas as pd
 import random
 import operator
 import re
-import time
 
 import plotly
 #plotly.tools.set_credentials_file(username='your-account', api_key='your-api-key')
@@ -102,9 +101,6 @@ def getArgs(argv):
 #####################################################################################
 
 if __name__ == '__main__':
-
-	print("\nProcessing.............")
-	start_time = time.time()
 
 	## 최단 경로 조사 대상 인자
 	src_node, dst_node, only_path = getArgs(sys.argv[1:])
@@ -521,7 +517,7 @@ if __name__ == '__main__':
 			if src in shortest_path_list and dst in shortest_path_list:
 				edge_if_type_vxlan_sp.append(edge)
 
-	if isOnlyPath:
+	if isSP and isOnlyPath:
 		## 필요한 Node 정보만 남기고 정리
 		nodes_sp_if_type_patch_tmp = []
 		for node in nodes_sp_if_type_patch:
@@ -602,9 +598,6 @@ if __name__ == '__main__':
 		for node in list(G.nodes()):
 			if node not in shortest_path_list:
 				G.remove_node(node)
-
-	#print G.nodes()
-	#sys.exit(1)
 
 	## 레이아웃 정의
 	#pos = nx.shell_layout(G)  # positions for all nodes
@@ -767,22 +760,15 @@ if __name__ == '__main__':
 	#plt.figure(figsize = (10,9))
 
 	plt.title("OpenStack Network Connectivity")
-	print("Processed [elapsed time: %f sec]\n" % (time.time() - start_time))
 
 	print("Creating GEXF.........")
-	start_time = time.time()
 	nx.write_gexf(G, "/var/www/html/OpenStack-Network-Connectivity.gexf")
 	#nx.write_gexf(G, "/var/www/html/OpenStack-Network-Connectivity.gexf", version="1.1draft")
-	print("Created GEXF [elapsed time: %f sec]\n" % (time.time() - start_time))
 
 	print("Creating Image........")
-	start_time = time.time()
 	plt.savefig("/var/www/html/OpenStack-Network-Connectivity.png", format = "png", dpi = 600)
-	print("Created Image [elapsed time: %f sec]\n" % (time.time() - start_time))
 
 ##### plot.ly 그래프 작성/전송 ########################################################
-	print("Creating Plotly........")
-	start_time = time.time()
 	#G=nx.random_geometric_graph(200,0.125)
 	#pos=nx.get_node_attributes(G,'pos')
 	
@@ -880,10 +866,8 @@ if __name__ == '__main__':
 	
 	## plot.ly로 데이터 전송
 	py.plot(fig, filename='networkx')
-	print("Created Plotly [elapsed time: %f sec]\n" % (time.time() - start_time))
 
 #### (참고용) ########################################################
-	print("======= Summary of Graph =======")
 	## 그래프 정보 출력
 	print(nx.info(G))
 
