@@ -30,49 +30,26 @@
  * LB : Linux Bridge
  * T: TAP Device
 
-### Full (Main Module)
+### Examples
 
-* 생략 정보 없이 전체 구조 조망.
-* 대상 규모 조정. (hostnames 리스트 조정)
-
-```bash
-# python viewer-full.py
-```
-
-### Full - Shortest-Path
-
-* 특정 출발지와 도착지를 지정하여 최단 경로를 Full 모드에 표시.
+* 조사 대상 조정. (hostnames 리스트 조정)
 
 ```bash
-# python viewer-full-shortest-path.py --src T:tap94d54818-a5 --dst T:tap708a8386-2f
+### 전체 구성도 작성
+
+# python visualizer.py
+
+
+### 전체 구성도에서 특정 구간(src <-> dst)의 경로 탐색
+
+# python visualizer.py --src "T:tap94d54818-a5" --dst "T:tap708a8386-2f"
+
+
+### 전체 구성도에서 특정 구간(src <-> dst)의 경로 탐색 (해당 경로만 표시)
+
+# python visualizer.py --src T:tap94d54818-a5 --dst "I:eth1(pub-compute-001)" --onlypath
 ```
 
-### Full - Shortest-Path (Only)
-
-* 특정 출발지와 도착지를 지정하여 최단 경로만을 표시. (이외 정보는 제거)
-
-```bash
-# python viewer-full-shortest-path-only.py --src T:tap94d54818-a5 --dst T:tap708a8386-2f
-```
-
-### Simple
-
-* 그래프 가독성/간소화를 위해 Interface 정보를 생략.
-* (Note) 현재 OpenStack OVS에서 Port당 다수의 Interface를 사용하는 케이스는 없다를 전제로 함.
-
-```bash
-# python viewer-simple.py
-```
-
-### Simple - Tree
-
-* Tree 형태로 보여줌.
-* (Note) 현재는 단일 Host만 지원.
-* (Note) 기본 "root_node"는 "br-ex 브릿지"로 지정됨. (변경 가능)
-
-```bash
-# python viewer-simple-tree.py
-```
 
 # TODO
 

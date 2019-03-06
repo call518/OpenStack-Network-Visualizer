@@ -1,0 +1,770 @@
+#!/usr/bin/env python
+# -*- mode:python; coding:utf-8 -*-
+
+### Whole Topology
+## ex) python visualizer.py
+
+### Local-VM to Local-VM
+## ex) python visualizer.py --src T:tap94d54818-a5 --dst T:tapeee4966d-68
+
+### Local-VM to Remote-VM
+## ex) python visualizer.py --src T:tap94d54818-a5 --dst T:tap708a8386-2f
+
+### Local-VM to External
+## ex) python visualizer.py --src T:tap94d54818-a5 --dst "I:eth1(pub-compute-001)"
+
+import warnings
+warnings.filterwarnings("ignore")
+import paramiko
+import time
+import sys, getopt
+import json
+import socket
+import networkx as nx
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import pandas as pd
+import random
+import operator
+import re
+
+import plotly
+#plotly.tools.set_credentials_file(username='your-account', api_key='your-api-key')
+import plotly.plotly as py
+import plotly.graph_objs as go
+
+def exec_ssh(ssh_hostname, ssh_cmd):
+	SSH_USERNAME = "root"
+	SSH_PASSWORD = "password"
+	SSH_KEY_FILE = "/root/.ssh/id_rsa"
+
+	ssh = paramiko.SSHClient()
+	ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+	ssh_stdin = ssh_stdout = ssh_stderr = None
+
+	try:
+	    #ssh.connect(SSH_ADDRESS, username=SSH_USERNAME, password=SSH_PASSWORD)
+	    ssh.connect(hostname=ssh_hostname, port=22, username=SSH_USERNAME, key_filename=SSH_KEY_FILE)
+	    ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(ssh_cmd, timeout=None, bufsize=-1, get_pty=False, environment=None)
+	except Exception as e:
+	    sys.stderr.write("SSH connection error: {0}".format(e))
+
+	output = ssh_stdout.read()
+
+	return output
+
+
+def removeDup(src_list):
+	return set([tuple(sorted(item)) for item in src_list])
+
+def xstr(value):
+    if value is None:
+        return 'NONE'
+    else:
+        return str(value)
+
+def findDictValue(xstr, xdict):
+    if xstr in xdict:
+        return xdict[xstr]
+    else:
+        return "NONE"
+
+def getArgs(argv):
+	src_node = None
+	dst_node = None
+	try:
+		opts, args = getopt.getopt(argv, "hs:d:o", ["help", "src=", "dst="])
+	except getopt.GetoptError:
+		print(sys.argv[0], "[-s <src node> -d <dst node>]")
+		sys.exit(2)
+	for opt, arg in opts:
+		if opt in ('-h', '--help'):
+			print(sys.argv[0], "[-s <src node> -d <dst node>]")
+			sys.exit()
+		elif opt in ("-s", "--src"):
+			src_node = arg
+		elif opt in ("-d", "--dst"):
+			dst_node = arg
+	return src_node, dst_node
+
+#####################################################################################
+
+if __name__ == '__main__':
+
+	## 최단 경로 조사 대상 인자
+	src_node, dst_node = getArgs(sys.argv[1:])
+
+	## 요청이 최단 경로 탐색인지 단순 전체 토플로지 검색인지 체크.
+	isSP = False
+	if src_node != None and dst_node != None:
+		isSP = True
+
+	###############################################
+	### Raw 데이터 생성
+	###############################################
+
+	result = []
+	result_linux_bridge = []
+
+	hostnames = (
+		"pub-network-001",
+		"pub-network-002",
+		"pub-compute-001",
+		"pub-compute-002",
+		"pub-compute-003",
+		"pub-compute-004",
+	)
+
+	for hostname in hostnames:
+		output_bridge = exec_ssh(hostname, "ovs-vsctl -f json list br")
+		output_port = exec_ssh(hostname, "ovs-vsctl -f json list port")
+		output_interface = exec_ssh(hostname, "ovs-vsctl -f json list interface")
+	
+		json_data_bridge = json.loads(output_bridge)
+		json_data_interface = json.loads(output_interface)
+		json_data_port = json.loads(output_port)
+	
+		for item_interface in json_data_interface['data']:
+	
+			if_hostname = hostname
+			if_uuid = item_interface[0][1]
+			if_admin_state = item_interface[1]
+			#if_name = "I:" + item_interface[26] + "(" + if_hostname + ")"
+			if_name = "I:" + item_interface[26]
+			if if_name.startswith("I:eth"):
+				if_name = if_name + "(" + hostname + ")"
+			if_type = item_interface[33]
+			if if_type in ["vxlan", "patch", "internal"]:
+				if_name = if_name + "(" + hostname + ")"
+			if_external_ids = item_interface[13][1]
+			if_link_state = item_interface[20]
+			if type(item_interface[24]) is list:
+				if_mtu = None
+			else:
+				if_mtu = item_interface[24]
+			if_ofport = item_interface[27]
+			if_options = item_interface[29][1]
+			if_other_config = item_interface[30][1]
+			if_statistics = item_interface[31][1]
+			if_status = item_interface[32][1]
+	
+			## OpenStack 메타 정보 검색
+			if_external_ids_attached_mac = if_external_ids_iface_id = if_external_ids_iface_status = if_external_ids_vm_uuid = None
+			if len(if_external_ids) > 0:
+				if_external_ids_attached_mac = if_external_ids[0][1]
+				if_external_ids_iface_id = if_external_ids[1][1]
+				if_external_ids_iface_status = if_external_ids[2][1]
+				if len(if_external_ids) > 3:
+					if_external_ids_vm_uuid = if_external_ids[3][1]
+
+			## Options 속성 검색
+			if_options_patch_peer = if_options_vxlan_df_default = if_options_vxlan_in_key = if_options_vxlan_local_ip = if_options_vxlan_out_key = if_options_vxlan_remote_ip = None
+			if if_type == "patch":
+				if_options_patch_peer = if_options[0][1]
+			elif if_type == "vxlan":
+				if_options_vxlan_df_default = if_options[0][1]
+				if_options_vxlan_in_key = if_options[1][1]
+				if_options_vxlan_local_ip = if_options[2][1]
+				if_options_vxlan_out_key = if_options[3][1]
+				if_options_vxlan_remote_ip = if_options[4][1]
+	
+			## Statistics 속성 검색
+			if_statistics_collisions = if_statistics_rx_bytes = if_statistics_rx_crc_err = if_statistics_rx_dropped = if_statistics_rx_errors = if_statistics_rx_frame_err = if_statistics_rx_over_err = if_statistics_rx_packets = if_statistics_tx_bytes = if_statistics_tx_dropped = if_statistics_tx_errors = if_statistics_tx_packets = None
+			statistics_dict = {}
+			for k, v in if_statistics:
+				statistics_dict[k] = v
+			if_statistics_collisions = findDictValue("collisions", statistics_dict)
+			if_statistics_rx_bytes = findDictValue("rx_bytes", statistics_dict)
+			if_statistics_rx_crc_err = findDictValue("rx_crc_err", statistics_dict)
+			if_statistics_rx_dropped = findDictValue("rx_dropped", statistics_dict)
+			if_statistics_rx_errors = findDictValue("rx_dropped", statistics_dict)
+			if_statistics_rx_frame_err = findDictValue("rx_frame_err", statistics_dict)
+			if_statistics_rx_over_err = findDictValue("rx_over_err", statistics_dict)
+			if_statistics_rx_packets = findDictValue("rx_packets", statistics_dict)
+			if_statistics_tx_bytes = findDictValue("tx_bytes", statistics_dict)
+			if_statistics_tx_dropped = findDictValue("tx_dropped", statistics_dict)
+			if_statistics_tx_errors = findDictValue("tx_errors", statistics_dict)
+			if_statistics_tx_packets = findDictValue("tx_packets", statistics_dict)
+	
+			## Interface가 속해 있는 Port 검색
+			if_port_uuid = if_port_name = None
+			for item_port in json_data_port['data']:
+				if if_uuid == item_port[8][1]:
+					if_port_uuid = item_port[0][1]
+					if_port_name = "P:" + item_port[11] + "(" + hostname + ")"
+					break
+	
+			## Port가 속해 있는 Bridge 검색
+			if_br_uuid = if_br_name = None
+			if if_port_uuid:
+				for item_bridge in json_data_bridge['data']:
+					tmp_br_uuid = item_bridge[0][1]
+					tmp_br_name = item_bridge[13]
+					for port in item_bridge[16][1]:
+						if if_port_uuid == port[1]:
+							if_br_uuid = tmp_br_uuid
+							if_br_name = "B:" + tmp_br_name + "(" + hostname + ")"
+							break
+			result.append({
+				"if_hostname": if_hostname,
+				"if_uuid": if_uuid,
+				"if_name": if_name,
+				"if_admin_state": if_admin_state,
+				"if_name": if_name,
+				"if_type": if_type,
+				"if_external_ids_attached_mac": if_external_ids_attached_mac,
+				"if_external_ids_iface_id": if_external_ids_iface_id,
+				"if_external_ids_iface_status": if_external_ids_iface_status,
+				"if_external_ids_vm_uuid": if_external_ids_vm_uuid,
+				"if_link_state": if_link_state,
+				"if_mtu": if_mtu,
+				"if_ofport": if_ofport,
+				"if_options_patch_peer": if_options_patch_peer,
+				"if_options_vxlan_df_default": if_options_vxlan_df_default,
+				"if_options_vxlan_in_key": if_options_vxlan_in_key,
+				"if_options_vxlan_local_ip": if_options_vxlan_local_ip,
+				"if_options_vxlan_out_key": if_options_vxlan_out_key,
+				"if_options_vxlan_remote_ip": if_options_vxlan_remote_ip,
+				"if_other_config": if_other_config,
+				"if_statistics_collisions": if_statistics_collisions,
+				"if_statistics_rx_bytes": if_statistics_rx_bytes,
+				"if_statistics_rx_crc_err": if_statistics_rx_crc_err,
+				"if_statistics_rx_dropped": if_statistics_rx_dropped,
+				"if_statistics_rx_errors": if_statistics_rx_errors,
+				"if_statistics_rx_frame_err": if_statistics_rx_frame_err,
+				"if_statistics_rx_over_err": if_statistics_rx_over_err,
+				"if_statistics_rx_packets": if_statistics_rx_packets,
+				"if_statistics_tx_bytes": if_statistics_tx_bytes,
+				"if_statistics_tx_dropped": if_statistics_tx_dropped,
+				"if_statistics_tx_errors": if_statistics_tx_errors,
+				"if_statistics_tx_packets": if_statistics_tx_packets,
+				"if_status": if_status,
+				"if_port_uuid": if_port_uuid,
+				"if_port_name": if_port_name,
+				"if_br_uuid": if_br_uuid,
+				"if_br_name": if_br_name
+			})
+
+		## Linux Bridge 정보 조사
+		cmd = "BR_ARRAY=(`ip link list type bridge | awk '/^[0-9]/ {print $2}' | sed -e 's/:$//g'`); num_br=1; for br in ${BR_ARRAY[@]}; do if [ $num_br -eq 1 ]; then echo '['; fi; echo '{\"'$br'\": ['; IF_ARRAY=(`ls -1 /sys/devices/virtual/net/$br/brif/`); num=1; for if in ${IF_ARRAY[@]}; do echo '\"'$if'\"'; if [ $num -lt ${#IF_ARRAY[@]} ]; then echo ','; fi; ((num++)); done; echo ']}'; if [ $num_br -lt ${#BR_ARRAY[@]} ]; then echo ','; else echo ']'; fi; ((num_br++)); done | tr '\n' ' '"
+		output_linux_bridge = exec_ssh(hostname, cmd)
+		if len(output_linux_bridge) > 0:
+			output_linux_bridge = "{ \"hostname\": \"" + hostname + "\", \"data\": " + output_linux_bridge + "}"
+			json_data_linux_bridge = json.loads(output_linux_bridge)
+		else:
+			json_data_linux_bridge = json.loads('{ "hostname": "%s", "data": [] }' % hostname)
+
+		## Linux Bridge 목록 생성
+		for data in json_data_linux_bridge['data']:
+			for bridge, interfaces in data.items():
+				#print(bridge, interfaces)
+				result_linux_bridge.append({
+					"hostname": hostname,
+					"bridge_name": bridge, 
+					"interfaces": interfaces, 
+				})
+	
+	###############################################
+	### 이미지 생성 작업 시작
+	###############################################
+	plt.figure(figsize=(10,10)) ## 캔버스 크기 증가
+	G = nx.Graph() 
+
+	for interface in result:
+		#print("if_name: %s (%s)" % (interface['if_name'], interface['if_uuid']))
+		#print("  if_port_name: %s (%s)" % (interface['if_port_name'], interface['if_port_uuid']))
+		#print("  if_br_name: %s (%s)" % (interface['if_br_name'], interface['if_br_uuid']))
+
+		if_name = interface['if_name']
+		if_type = interface['if_type']
+
+		G.add_node(if_name,
+			if_name = xstr(interface['if_name']),
+			if_hostname = xstr(interface['if_hostname']),
+			if_uuid = xstr(interface['if_uuid']),
+			if_admin_state = xstr(interface['if_admin_state']),
+			if_type = xstr(if_type),
+			if_external_ids_attached_mac = xstr(interface['if_external_ids_attached_mac']),
+			if_external_ids_iface_id = xstr(interface['if_external_ids_iface_id']),
+			if_external_ids_iface_status = xstr(interface['if_external_ids_iface_status']),
+			if_external_ids_vm_uuid = xstr(interface['if_external_ids_vm_uuid']),
+			if_link_state = xstr(interface['if_link_state']),
+			if_mtu = xstr(interface['if_mtu']),
+			if_ofport = xstr(interface['if_ofport']),
+			if_options_patch_peer = xstr(interface['if_options_patch_peer']),
+			if_options_vxlan_df_default = xstr(interface['if_options_vxlan_df_default']),
+			if_options_vxlan_in_key = xstr(interface['if_options_vxlan_in_key']),
+			if_options_vxlan_local_ip = xstr(interface['if_options_vxlan_local_ip']),
+			if_options_vxlan_out_key = xstr(interface['if_options_vxlan_out_key']),
+			if_options_vxlan_remote_ip = xstr(interface['if_options_vxlan_remote_ip']),
+			if_other_config = xstr(interface['if_other_config']),
+			if_statistics_collisions = xstr(interface['if_statistics_collisions']),
+			if_statistics_rx_bytes = xstr(interface['if_statistics_rx_bytes']),
+			if_statistics_rx_crc_err = xstr(interface['if_statistics_rx_crc_err']),
+			if_statistics_rx_dropped = xstr(interface['if_statistics_rx_dropped']),
+			if_statistics_rx_errors = xstr(interface['if_statistics_rx_errors']),
+			if_statistics_rx_frame_err = xstr(interface['if_statistics_rx_frame_err']),
+			if_statistics_rx_over_err = xstr(interface['if_statistics_rx_over_err']),
+			if_statistics_rx_packets = xstr(interface['if_statistics_rx_packets']),
+			if_statistics_tx_bytes = xstr(interface['if_statistics_tx_bytes']),
+			if_statistics_tx_dropped = xstr(interface['if_statistics_tx_dropped']),
+			if_statistics_tx_errors = xstr(interface['if_statistics_tx_errors']),
+			if_statistics_tx_packets = xstr(interface['if_statistics_tx_packets']),
+			if_status = xstr(interface['if_status']),
+			if_port_uuid = xstr(interface['if_port_uuid']),
+			if_port_name = xstr(interface['if_port_name']),
+			if_br_uuid = xstr(interface['if_br_uuid']),
+			if_br_name = xstr(interface['if_br_name'])
+		)
+
+		## 인터페이스 <-> Bridge <-> Port 간 Edge 정보 추가
+		G.add_edge(interface['if_name'], interface['if_port_name'])
+		G.add_edge(interface['if_port_name'], interface['if_br_name'])
+
+		## VxLAN 터널 연결 구성
+		if if_type == "vxlan":
+			vxlan_local_ip = interface['if_options_vxlan_local_ip']
+			vxlan_remote_ip = interface['if_options_vxlan_remote_ip']
+			vxlan_local_hostname = interface['if_options_vxlan_local_ip']
+			vxlan_remote_hostname = interface['if_options_vxlan_remote_ip']
+			#print(vxlan_local_ip, vxlan_remote_ip)
+			#G.add_edge(interface['if_name'], interface['if_port_name'])
+			#print(if_name, interface['if_options'])
+
+	## Linux Bridge 정보 'G'에 추가 (노드/엣지)
+	edge_VP2LB = []
+	edge_I2VP = []
+	edge_T2LB = []
+	for item in result_linux_bridge:
+		hostname = item['hostname']
+		br_name = "LB:" + item['bridge_name']
+		interfaces = item['interfaces']
+		G.add_node(br_name)
+		for interface in interfaces:
+			if interface.startswith("qvb"):
+				if_name = "VP:" + interface
+				if_name_ovs_pair = re.sub(r'^VP:qvb', 'I:qvo', if_name)
+				G.add_node(if_name)
+				G.add_edge(if_name_ovs_pair, if_name)
+				G.add_edge(if_name, br_name)
+				edge_VP2LB.append((if_name, br_name))
+				edge_I2VP.append((if_name_ovs_pair, if_name))
+			elif interface.startswith("tap"):
+				if_name = "T:" + interface
+				G.add_node(if_name)
+				G.add_edge(if_name, br_name)
+				edge_T2LB.append((if_name, br_name))
+
+	## VxLAN 터널 링크 정보 Dictionay 생성
+	vxlan_link_dict = {}
+	for node_data in G.nodes(data=True):
+		if_name = node_data[0]
+		data_dict = node_data[1]
+		if len(data_dict) > 0:
+			if_type = data_dict['if_type']
+			if if_type == "vxlan":
+				vxlan_local_ip = data_dict['if_options_vxlan_local_ip']
+				vxlan_local_hostname = socket.gethostbyaddr(vxlan_local_ip)[0]
+				vxlan_remote_ip = data_dict['if_options_vxlan_remote_ip']
+				vxlan_remote_hostname = socket.gethostbyaddr(vxlan_remote_ip)[0]
+				vxlan_link_dict[vxlan_local_hostname + "---" + vxlan_remote_hostname] = if_name
+
+	## if_type 속성에 따른 Node 및 Edge 목록 생성
+	## if_link_state 값이 Down인 Interface 노드 목록 생성
+	nodes_if_type_patch = []
+	nodes_if_type_vxlan = []
+	nodes_if_type_internal = []
+	nodes_if_type_normal = []
+	edge_if_type_patch = []
+	edge_if_type_vxlan = []
+	nodes_if_link_state_down = []
+	for node_data in G.nodes(data=True):
+		if_name = node_data[0]
+		data_dict = node_data[1]
+		if len(data_dict) > 0:
+			if_type = data_dict['if_type']
+			if_link_state = data_dict['if_link_state']
+			if if_type == "patch":
+				nodes_if_type_patch.append(if_name)
+				peer_if_hostname = data_dict['if_hostname']
+				peer_if_name = "I:" + data_dict['if_options_patch_peer'] + "(" + peer_if_hostname + ")"
+				edge_if_type_patch.append((if_name, peer_if_name))
+				
+			elif if_type == "vxlan":
+				nodes_if_type_vxlan.append(if_name)
+				vxlan_local_ip = data_dict['if_options_vxlan_local_ip']
+				vxlan_local_hostname = socket.gethostbyaddr(vxlan_local_ip)[0]
+				vxlan_remote_ip = data_dict['if_options_vxlan_remote_ip']
+				vxlan_remote_hostname = socket.gethostbyaddr(vxlan_remote_ip)[0]
+				if vxlan_remote_hostname in hostnames:
+					find_key = vxlan_remote_hostname + "---" + vxlan_local_hostname
+					remote_if_name = vxlan_link_dict[find_key]
+					edge_if_type_vxlan.append((if_name, remote_if_name))
+			elif if_type == "internal":
+				nodes_if_type_internal.append(if_name)
+			else:
+				nodes_if_type_normal.append(if_name)
+			if if_link_state == "down":
+				nodes_if_link_state_down.append(if_name)
+
+	## Interface/Port/Bridge Edge 목록 생성 (중복 존재 가능)
+	edge_I2P = [(u, v) for (u, v) in G.edges() if (u.startswith("I:") and v.startswith("P:")) or (u.startswith("P:") and v.startswith("I:"))]
+	edge_P2B = [(u, v) for (u, v) in G.edges() if (u.startswith("P:") and v.startswith("B:")) or (u.startswith("B:") and v.startswith("P:"))]
+
+	## 순서와 무관하게 중복 제거 처리
+	edge_I2P = removeDup(edge_I2P)
+	edge_P2B = removeDup(edge_P2B)
+	edge_VP2LB = removeDup(edge_VP2LB)
+	edge_I2VP = removeDup(edge_I2VP)
+	edge_T2LB = removeDup(edge_T2LB)
+	edge_if_type_patch = removeDup(edge_if_type_patch)
+	edge_if_type_vxlan = removeDup(edge_if_type_vxlan)
+
+	## Patch Edge 목록을 G 객체에 통합
+	G.add_edges_from(edge_if_type_patch)
+	G.add_edges_from(edge_if_type_vxlan)
+
+	## 요청된 시작과 끝 노드에 대한 '최단 경로' 노드 리스트 작성
+	if isSP:
+		shortest_path_list = nx.shortest_path(G, source=src_node, target=dst_node)
+
+	## Node 종류(Interface/Port/Bridge)별 목록 생성
+	nodes_interface = [node for node in G.nodes() if node.startswith("I:")]
+	nodes_port = [node for node in G.nodes() if node.startswith("P:")]
+	nodes_bridge = [node for node in G.nodes() if node.startswith("B:")]
+	nodes_linux_bridge = [node for node in G.nodes() if node.startswith("LB:")]
+	nodes_linux_interface_pair = [node for node in G.nodes() if node.startswith("VP:")]
+	nodes_linux_interface_tap = [node for node in G.nodes() if node.startswith("T:")]
+
+	if isSP:
+		nodes_sp_interface = [node for node in shortest_path_list if node.startswith("I:")]
+		nodes_sp_port = [node for node in shortest_path_list if node.startswith("P:")]
+		nodes_sp_bridge = [node for node in shortest_path_list if node.startswith("B:")]
+		nodes_sp_linux_bridge = [node for node in shortest_path_list if node.startswith("LB:")]
+		nodes_sp_linux_interface_pair = [node for node in shortest_path_list if node.startswith("VP:")]
+		nodes_sp_linux_interface_tap = [node for node in shortest_path_list if node.startswith("T:")]
+		nodes_sp_if_type_patch = [node for node in nodes_if_type_patch if node in shortest_path_list]
+		nodes_sp_if_type_vxlan = [node for node in nodes_if_type_vxlan if node in shortest_path_list]
+		nodes_sp_if_type_internal = [node for node in nodes_if_type_internal if node in shortest_path_list]
+		nodes_sp_if_link_state_down = [node for node in nodes_if_link_state_down if node in shortest_path_list]
+
+	## SP Node 종류(Interface/Port/Bridge)별 목록 생성
+	if isSP:
+		## SP Edge 목록 생성
+		edge_I2P_sp = []
+		for edge in edge_I2P:
+			src = edge[0]
+			dst = edge[1]
+			if src in shortest_path_list and dst in shortest_path_list:
+				edge_I2P_sp.append(edge)
+	
+		edge_P2B_sp = []
+		for edge in edge_P2B:
+			src = edge[0]
+			dst = edge[1]
+			if src in shortest_path_list and dst in shortest_path_list:
+				edge_P2B_sp.append(edge)
+	
+		edge_VP2LB_sp = []
+		for edge in edge_VP2LB:
+			src = edge[0]
+			dst = edge[1]
+			if src in shortest_path_list and dst in shortest_path_list:
+				edge_VP2LB_sp.append(edge)
+	
+		edge_I2VP_sp = []
+		for edge in edge_I2VP:
+			src = edge[0]
+			dst = edge[1]
+			if src in shortest_path_list and dst in shortest_path_list:
+				edge_I2VP_sp.append(edge)
+	
+		edge_T2LB_sp = []
+		for edge in edge_T2LB:
+			src = edge[0]
+			dst = edge[1]
+			if src in shortest_path_list and dst in shortest_path_list:
+				edge_T2LB_sp.append(edge)
+	
+		edge_if_type_patch_sp = []
+		for edge in edge_if_type_patch:
+			src = edge[0]
+			dst = edge[1]
+			if src in shortest_path_list and dst in shortest_path_list:
+				edge_if_type_patch_sp.append(edge)
+	
+		edge_if_type_vxlan_sp = []
+		for edge in edge_if_type_vxlan:
+			src = edge[0]
+			dst = edge[1]
+			if src in shortest_path_list and dst in shortest_path_list:
+				edge_if_type_vxlan_sp.append(edge)
+
+	## 레이아웃 정의
+	#pos = nx.shell_layout(G)  # positions for all nodes
+	#pos = nx.spring_layout(G, k=0.05, iterations=50)  # positions for all nodes
+	#pos = nx.spring_layout(G, iterations=50)
+	#pos = nx.spectral_layout(G, scale=2)  # positions for all nodes
+	#pos = nx.circular_layout(G)  # positions for all nodes
+	#pos = nx.random_layout(G)  # positions for all nodes
+	pos = nx.kamada_kawai_layout(G)
+
+	## 노드 겹침 회희 레이아웃::kamada kawai (주의: 노드가 많을 경우, 시간이 오래 걸림)
+	#df = pd.DataFrame(index=G.nodes(), columns=G.nodes())
+	#for row, data in nx.shortest_path_length(G):
+	#    for col, dist in data.items():
+	#        df.loc[row,col] = dist
+	#df = df.fillna(df.max().max())
+	#pos = nx.kamada_kawai_layout(G, dist=df.to_dict())
+
+	## Default Node 사이즈
+	node_szie = 3
+
+	node_szie_sp = 20
+
+	if isSP:
+		alpha_normal = 0.1
+	else:
+		alpha_normal = 0.5
+
+	alpha_sp = 0.9
+
+
+	### 기본 요소들 그리기
+	## Interface Node 그리기
+	nx.draw_networkx_nodes(G, pos, nodelist=nodes_interface, with_labels=True, node_size=node_szie, node_shape='o', node_color='#F972FF', alpha=alpha_normal, linewidths=1)
+
+	## Port Node 그리기
+	nx.draw_networkx_nodes(G, pos, nodelist=nodes_port, with_labels=True, node_size=node_szie, node_shape='o', node_color='#72B2FF', alpha=alpha_normal, linewidths=1)
+
+	## Bridge Node 그리기
+	nx.draw_networkx_nodes(G, pos, nodelist=nodes_bridge, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF5634', alpha=alpha_normal, linewidths=1)
+
+	## Linux Interface Node 그리기 (veth pair)
+	nx.draw_networkx_nodes(G, pos, nodelist=nodes_linux_interface_pair, with_labels=True, node_size=node_szie, node_shape='o', node_color='#F972FF', alpha=alpha_normal, linewidths=1)
+
+	## Linux Interface Node 그리기 (tap)
+	nx.draw_networkx_nodes(G, pos, nodelist=nodes_linux_interface_tap, with_labels=True, node_size=node_szie, node_shape='o', node_color='#7E7E7E', alpha=alpha_normal, linewidths=1)
+
+	## Linux Bridge Node 그리기
+	nx.draw_networkx_nodes(G, pos, nodelist=nodes_linux_bridge, with_labels=True, node_size=node_szie, node_shape='o', node_color='#0C00A0', alpha=alpha_normal, linewidths=1)
+
+	## Patch 타입 노드 업데이트 (색상 변경)
+	nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_patch, with_labels=True, node_size=node_szie, node_shape='o', node_color='#279700', alpha=alpha_normal, linewidths=1)
+
+	## VxLAN 타입 노드 업데이트 (색상 변경)
+	nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_vxlan, with_labels=True, node_size=node_szie, node_shape='o', node_color='#E9D000', alpha=alpha_normal, linewidths=1)
+
+	## Internal 타입 노드 업데이트 (색상 변경)
+	nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_internal, with_labels=True, node_size=node_szie, node_shape='o', node_color='#382000', alpha=alpha_normal, linewidths=1)
+
+	## Down 상태 노드 업데이트 (색상 변경)
+	## 미사용 (OVS의 link_state값이 정확하지 않음. namespace에 속한 Interface의 상태 체크 못하는 것으로 추정)
+	#nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_link_state_down, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF0000', alpha=alpha_normal, linewidths=1)
+	#nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_if_link_state_down, with_labels=True, node_size=node_szie_ap, node_shape='o', node_color='#FF0000', alpha=alpha_sp, linewidths=1)
+
+
+	### SP 모드일 경우 덮어쓰기
+	if isSP:
+		## Interface Node 그리기
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_interface, with_labels=True, node_size=node_szie_sp, node_shape='o', node_color='#F972FF', alpha=alpha_sp, linewidths=1)
+	
+		## Port Node 그리기
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_port, with_labels=True, node_size=node_szie_sp, node_shape='o', node_color='#72B2FF', alpha=alpha_sp, linewidths=1)
+	
+		## Bridge Node 그리기
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_bridge, with_labels=True, node_size=node_szie_sp, node_shape='o', node_color='#FF5634', alpha=alpha_sp, linewidths=1)
+	
+		## Linux Interface Node 그리기 (veth pair)
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_linux_interface_pair, with_labels=True, node_size=node_szie_sp, node_shape='o', node_color='#F972FF', alpha=alpha_sp, linewidths=1)
+	
+		## Linux Interface Node 그리기 (tap)
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_linux_interface_tap, with_labels=True, node_size=node_szie_sp, node_shape='o', node_color='#7E7E7E', alpha=alpha_sp, linewidths=1)
+	
+		## Linux Bridge Node 그리기
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_linux_bridge, with_labels=True, node_size=node_szie_sp, node_shape='o', node_color='#0C00A0', alpha=alpha_sp, linewidths=1)
+	
+		## Patch 타입 노드 업데이트 (색상 변경)
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_if_type_patch, with_labels=True, node_size=node_szie_sp, node_shape='o', node_color='#279700', alpha=alpha_sp, linewidths=1)
+	
+		## VxLAN 타입 노드 업데이트 (색상 변경)
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_if_type_vxlan, with_labels=True, node_size=node_szie_sp, node_shape='o', node_color='#E9D000', alpha=alpha_sp, linewidths=1)
+	
+		## Internal 타입 노드 업데이트 (색상 변경)
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_if_type_internal, with_labels=True, node_size=node_szie_sp, node_shape='o', node_color='#382000', alpha=alpha_sp, linewidths=1)
+	
+		## Down 상태 노드 업데이트 (색상 변경)
+		## 미사용 (OVS의 link_state값이 정확하지 않음. namespace에 속한 Interface의 상태 체크 못하는 것으로 추정)
+		#nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_if_link_state_down, with_labels=True, node_size=node_szie_ap, node_shape='o', node_color='#FF0000', alpha=alpha_sp, linewidths=1)
+
+
+	## Interface/Port/Bridge Node Label 그리기
+	label_font_size = 1
+	label_font_size_sp = 1.5
+
+	labels = {}
+	labels_sp = {}
+
+	for node in G.nodes():
+		if isSP:
+			if node not in shortest_path_list:
+				labels[node] = node
+			else:
+				labels_sp[node] = node
+		else:
+			labels_sp[node] = node
+
+	nx.draw_networkx_labels(G, pos, labels, font_size=label_font_size, font_family='sans-serif', alpha=alpha_normal)
+	if isSP:
+		nx.draw_networkx_labels(G, pos, labels_sp, font_size=label_font_size_sp, font_family='sans-serif', alpha=alpha_sp)
+
+	## Edge 그리기
+	nx.draw_networkx_edges(G, pos, edgelist=edge_I2P, width=0.1, alpha=alpha_normal, edge_color='#E67E22')
+	nx.draw_networkx_edges(G, pos, edgelist=edge_P2B, width=0.2, alpha=alpha_normal, edge_color='#2ECC71')
+	nx.draw_networkx_edges(G, pos, edgelist=edge_if_type_patch, width=0.8, alpha=alpha_normal, edge_color='#00FFE8')
+	nx.draw_networkx_edges(G, pos, edgelist=edge_if_type_vxlan, width=1, alpha=alpha_normal, edge_color='#FFF818')
+	nx.draw_networkx_edges(G, pos, edgelist=edge_I2VP, width=0.8, alpha=alpha_normal, edge_color='#68FF66')
+	nx.draw_networkx_edges(G, pos, edgelist=edge_VP2LB, width=0.2, alpha=alpha_normal, edge_color='#E67E22')
+	nx.draw_networkx_edges(G, pos, edgelist=edge_T2LB, width=0.2, alpha=alpha_normal, edge_color='#E67E22')
+
+	## SP 모드일 경우, Edge 그리기
+	if isSP:
+		nx.draw_networkx_edges(G, pos, edgelist=edge_I2P_sp, width=0.1, alpha=alpha_sp, edge_color='#E67E22')
+		nx.draw_networkx_edges(G, pos, edgelist=edge_P2B_sp, width=0.2, alpha=alpha_sp, edge_color='#2ECC71')
+		nx.draw_networkx_edges(G, pos, edgelist=edge_if_type_patch_sp, width=0.8, alpha=alpha_sp, edge_color='#00FFE8')
+		nx.draw_networkx_edges(G, pos, edgelist=edge_if_type_vxlan_sp, width=1, alpha=alpha_sp, edge_color='#FFF818')
+		nx.draw_networkx_edges(G, pos, edgelist=edge_I2VP_sp, width=0.8, alpha=alpha_sp, edge_color='#68FF66')
+		nx.draw_networkx_edges(G, pos, edgelist=edge_VP2LB_sp, width=0.2, alpha=alpha_sp, edge_color='#E67E22')
+		nx.draw_networkx_edges(G, pos, edgelist=edge_T2LB_sp, width=0.2, alpha=alpha_sp, edge_color='#E67E22')
+
+	plt.axis('off')
+
+	#plt.figure(figsize = (10,9))
+
+	plt.title("OpenStack Network Connectivity - Full - Shortest-Path")
+
+	print("Creating GEXF.........")
+	nx.write_gexf(G, "/var/www/html/OpenStack-Network-Connectivity.gexf")
+	#nx.write_gexf(G, "/var/www/html/OpenStack-Network-Connectivity.gexf", version="1.1draft")
+
+	print("Creating Image........")
+	plt.savefig("/var/www/html/OpenStack-Network-Connectivity.png", format = "png", dpi = 600)
+
+##### plot.ly 그래프 작성/전송 ########################################################
+#	#G=nx.random_geometric_graph(200,0.125)
+#	#pos=nx.get_node_attributes(G,'pos')
+#	
+#	## 'G'에 노드별 포지션 정보 추가
+#	nx.set_node_attributes(G, name='pos', values=pos)
+#
+#	## 기준 노드 선정 (중심에서 0.5, 0.5 거리에 있는 노드 선택)
+#	dmin = 1
+#	ncenter = 0
+#	for n in pos:
+#		x,y = pos[n]
+#		d = (x - 0.5) ** 2 + (y - 0.5) ** 2
+#		if d < dmin:
+#			ncenter = n
+#			dmin = d
+#	
+#	p = nx.single_source_shortest_path_length(G,ncenter)
+#	
+#	## Edge 추적
+#	edge_trace = go.Scatter(
+#		x = [],
+#		y = [],
+#		line = dict(width=0.5, color='#888'),
+#		hoverinfo = 'none',
+#		mode = 'lines')
+#
+#	## Edge 포지션 생성
+#	for edge in G.edges():
+#		x0, y0 = G.node[edge[0]]['pos']
+#		x1, y1 = G.node[edge[1]]['pos']
+#		edge_trace['x'] += tuple([x0, x1, None])
+#		edge_trace['y'] += tuple([y0, y1, None])
+#
+#	## Node 추적
+#	node_trace = go.Scatter(
+#		x = [],
+#		y = [],
+#		text = [],
+#		mode = 'markers',
+#		hoverinfo = 'text',
+#		marker = dict(
+#			showscale = True,
+#	 		# colorscale options
+#			#'Greys' | 'YlGnBu' | 'Greens' | 'YlOrRd' | 'Bluered' | 'RdBu' |
+#			#'Reds' | 'Blues' | 'Picnic' | 'Rainbow' | 'Portland' | 'Jet' |
+#			#'Hot' | 'Blackbody' | 'Earth' | 'Electric' | 'Viridis' |
+#			colorscale = 'YlGnBu',
+#			reversescale = True,
+#			color = [],
+#			size = 10,
+#			colorbar = dict(
+#				thickness = 15,
+#				title = 'Node Connections',
+#				xanchor = 'left',
+#				titleside = 'right'
+#			),
+#			line = dict(width=2)))
+#
+#	## Node 포지션 생성	
+#	for node in G.nodes():
+#		x, y = G.node[node]['pos']
+#		node_trace['x'] += tuple([x])
+#		node_trace['y'] += tuple([y])
+#	
+#	## Node 표현 정보 생성
+#	for node, adjacencies in enumerate(G.adjacency()):
+#		node_trace['marker']['color'] += tuple([len(adjacencies[1])])
+#		#node_info = '# of connections: ' + str(len(adjacencies[1]))
+#		node_info = adjacencies[0] + " (#" + str(len(adjacencies[1])) + ") "
+#		node_trace['text'] += tuple([node_info])
+#	
+#	## 그래프 생성
+#	fig = go.Figure(
+#		data = [edge_trace, node_trace],
+#		layout = go.Layout(
+#			title = '<br>Network graph made with Python',
+#			titlefont = dict(size = 16),
+#			showlegend = False,
+#	 		hovermode = 'closest',
+#			margin = dict(b=20, l=5, r=5, t=40),
+#			annotations = [
+#				dict(
+#					text = "Python code: <a href='https://plot.ly/ipython-notebooks/network-graphs/'> https://plot.ly/ipython-notebooks/network-graphs/</a>",
+#					showarrow = False,
+#					xref = "paper",
+#					yref="paper",
+#					x=0.005,
+#					y=-0.002
+#				)
+#			],
+#			xaxis = dict(showgrid=False, zeroline=False, showticklabels=False),
+#			yaxis = dict(showgrid=False, zeroline=False, showticklabels=False)
+#		)
+#	)
+#	
+#	## plot.ly로 데이터 전송
+#	py.plot(fig, filename='networkx')
+
+#### (참고용) ########################################################
+#	## 그래프 정보 출력
+	print(nx.info(G))
+#
+#	## 그래프 밀도 출력 (0~1 사이 값으로, 1은 최대 밀도)
+#	print("Network density:", nx.density(G))
+#
+#	## 최단 경로 찾기 예제
+#	fell_whitehead_path = nx.shortest_path(G, source="I:qvoeee4966d-68", target="I:vxlan-0a00e8ae(pub-compute-001)")
+#	print("Shortest path between Fell and Whitehead:", fell_whitehead_path)
+#
+#	## 노드별 중요도(중심성) 측정
+#	degree_dict = dict(G.degree(G.nodes()))
+#	sorted_degree = sorted(degree_dict.items(), key=operator.itemgetter(1), reverse=True)
+#	print("Top 20 nodes by degree:")
+#	for d in sorted_degree[:20]:
+#		print(d)
