@@ -448,6 +448,13 @@ if __name__ == '__main__':
 	## 요청된 시작과 끝 노드에 대한 '최단 경로' 노드 리스트 작성
 	if isSP:
 		shortest_path_list = nx.shortest_path(G, source=src_node, target=dst_node)
+		#shortest_path_list = nx.all_shortest_paths(G, source=src_node, target=dst_node)
+		#shortest_path_list = nx.shortest_path_length(G, source=src_node, target=dst_node)
+		#shortest_path_list = nx.average_shortest_path_length(G, source=src_node, target=dst_node)
+		#shortest_path_list = nx.has_path(G, source=src_node, target=dst_node)
+		#for p in shortest_path_list:
+		#	print(p)
+		#sys.exit(1)
 
 	## Node 종류(Interface/Port/Bridge)별 목록 생성
 	nodes_interface = [node for node in G.nodes() if node.startswith("I:")]
@@ -781,7 +788,7 @@ if __name__ == '__main__':
 
 	print("Creating Image........")
 	start_time = time.time()
-	plt.savefig("/var/www/html/OpenStack-Network-Connectivity.png", format = "png", dpi = 600)
+	plt.savefig("/var/www/html/OpenStack-Network-Connectivity.png", format = "png", dpi = 1200)
 	print("Created Image [elapsed time: %f sec]\n" % (time.time() - start_time))
 
 ##### plot.ly 그래프 작성/전송 ########################################################
