@@ -607,16 +607,17 @@ if __name__ == '__main__':
 	#sys.exit(1)
 
 	## 레이아웃 정의
+	if isOnlyPath == True:
+		pos = nx.spring_layout(G, k=0.05, iterations=70)
+	else:
+		pos = nx.kamada_kawai_layout(G, scale=1)
+
 	#pos = nx.shell_layout(G)  # positions for all nodes
 	#pos = nx.spring_layout(G, k=0.05, iterations=50)  # positions for all nodes
 	#pos = nx.spring_layout(G, iterations=50)
 	#pos = nx.spectral_layout(G, scale=2)  # positions for all nodes
 	#pos = nx.circular_layout(G)  # positions for all nodes
 	#pos = nx.random_layout(G)  # positions for all nodes
-	if isOnlyPath == True:
-		pos = nx.spring_layout(G, k=0.05, iterations=40)
-	else:
-		pos = nx.kamada_kawai_layout(G)
 
 	## 노드 겹침 회희 레이아웃::kamada kawai (주의: 노드가 많을 경우, 시간이 오래 걸림)
 	#df = pd.DataFrame(index=G.nodes(), columns=G.nodes())
@@ -637,7 +638,7 @@ if __name__ == '__main__':
 	alpha_sp = 0.9
 
 
-	### 기본 요소들 그리기
+	### 기본 Node 스타일 정의/생성
 	if not isOnlyPath:
 		## Interface Node 그리기
 		nx.draw_networkx_nodes(G, pos, nodelist=nodes_interface, with_labels=True, node_size=node_szie, node_shape='o', node_color='#F972FF', alpha=alpha_normal, linewidths=1)
@@ -672,7 +673,7 @@ if __name__ == '__main__':
 		#nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_if_link_state_down, with_labels=True, node_size=node_szie_ap, node_shape='o', node_color='#FF0000', alpha=alpha_sp, linewidths=1)
 
 
-	### SP 모드일 경우 덮어쓰기
+	### SP 모드일 경우 Node 스타일 정의/덮어쓰기
 	if isSP:
 		if isOnlyPath:
 			node_szie_sp = 300
@@ -710,7 +711,7 @@ if __name__ == '__main__':
 		#nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_if_link_state_down, with_labels=True, node_size=node_szie_ap, node_shape='o', node_color='#FF0000', alpha=alpha_sp, linewidths=1)
 
 
-	## Interface/Port/Bridge Node Label 그리기
+	## Node Label 그리기 (Interface/Port/Bridge)
 	label_font_size = 1
 	label_font_size_sp = 2
 	label_font_size_sp_only = 5
@@ -736,6 +737,7 @@ if __name__ == '__main__':
 		nx.draw_networkx_labels(G, pos, labels_sp, font_size=label_font_size_sp_only, font_family='sans-serif', alpha=alpha_sp)
 
 	## Edge 그리기
+	# Only Path의 경우 Edge 스타일 정의/생성
 	if isOnlyPath:
 		nx.draw_networkx_edges(G, pos, edgelist=edge_I2P_sp, width=1, alpha=0.5, edge_color='#E67E22')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_P2B_sp, width=2, alpha=0.5, edge_color='#2ECC71')
@@ -744,6 +746,7 @@ if __name__ == '__main__':
 		nx.draw_networkx_edges(G, pos, edgelist=edge_I2VP_sp, width=0.8, alpha=0.5, edge_color='#68FF66')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_VP2LB_sp, width=0.2, alpha=0.5, edge_color='#E67E22')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_T2LB_sp, width=0.2, alpha=0.5, edge_color='#E67E22')
+	# 그외, 모든 노드 정보 표시 모드에서 Edge 스타일 정의/생성
 	else:
 		nx.draw_networkx_edges(G, pos, edgelist=edge_I2P, width=0.1, alpha=alpha_normal, edge_color='#E67E22')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_P2B, width=0.2, alpha=alpha_normal, edge_color='#2ECC71')
@@ -753,6 +756,7 @@ if __name__ == '__main__':
 		nx.draw_networkx_edges(G, pos, edgelist=edge_VP2LB, width=0.2, alpha=alpha_normal, edge_color='#E67E22')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_T2LB, width=0.2, alpha=alpha_normal, edge_color='#E67E22')
 
+	## 모든 노드 표시 모드에서, SP 경로만 강조 Edge 스타일 정의/생성
 	if isSP and not isOnlyPath:
 		nx.draw_networkx_edges(G, pos, edgelist=edge_I2P_sp, width=0.1, alpha=alpha_sp, edge_color='#E67E22')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_P2B_sp, width=0.2, alpha=alpha_sp, edge_color='#2ECC71')
