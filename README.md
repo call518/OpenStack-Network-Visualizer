@@ -19,6 +19,7 @@
 
 ### Requirements
 
+* (Note) 현재 DVR 모드만 지원.
 * 모든 호스트들은 Key 기반 SSH 연결 허용.
 * VXLAN 연결 IP를 Hostname으로 질의 가능. (e.g /etc/hosts 등록)
 * 기본 그래프 파일 출력 경로 -> "/var/www/html/"
