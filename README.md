@@ -17,9 +17,20 @@
 
 # Tutorial
 
+### Usage
+
+```bash
+# python [{-s|--src} <src node> {-d|--dst} <dst node> [-o|--onlypath] [-f|--fip] [-p|--plotly]
+```
+
+* -s|--src : 경로 탐색시, 출발 노드 지정
+* -d|--dst : 경로 탐색시, 도착 노드 지정
+* -o|--onlypath : 경로 노드만 표시
+* -f|--fip : DVR모드에서 FIP 관련 정보 표시
+* -p|--plotly : plotly 활성화
+
 ### Requirements
 
-* (Note) 현재 DVR 모드만 지원.
 * 모든 호스트들은 Key 기반 SSH 연결 허용.
 * VXLAN 연결 IP를 Hostname으로 질의 가능. (e.g /etc/hosts 등록)
 * 기본 그래프 파일 출력 경로 -> "/var/www/html/"
@@ -30,6 +41,7 @@
  * VP: VETH Pair
  * LB : Linux Bridge
  * T: TAP Device
+* (Note) FIP 정보는 DVR 모드만 지원.
 
 ### Examples
 

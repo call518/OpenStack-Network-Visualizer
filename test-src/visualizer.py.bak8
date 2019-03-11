@@ -76,17 +76,14 @@ def getArgs(argv):
 	src_node = None
 	dst_node = None
 	only_path = False
-	enable_fip = False
-	enable_plotly = False
-	usage_str = " [{-s|--src} <src node> {-d|--dst} <dst node> [-o|--onlypath] [-f|--fip] [-p|--plotly]"
 	try:
-		opts, args = getopt.getopt(argv, "hsdofp", ["help", "src=", "dst=", "onlypath", "fip", "plotly"])
+		opts, args = getopt.getopt(argv, "hs:d:o", ["help", "src=", "dst=", "onlypath"])
 	except getopt.GetoptError:
-		print("# python " + sys.argv[0] + usage_str)
+		print("# python " + sys.argv[0] + " [{-s|--src} <src node> {-d|--dst| <dst node> [-o|--only-path]]")
 		sys.exit(2)
 	for opt, arg in opts:
 		if opt in ('-h', '--help'):
-			print("# python " + sys.argv[0] + usage_str)
+			print("# python " + sys.argv[0] + " [{-s|--src} <src node> {-d|--dst| <dst node> [-o|--only-path]]")
 			sys.exit()
 		elif opt in ("-s", "--src"):
 			src_node = arg
@@ -94,34 +91,40 @@ def getArgs(argv):
 			dst_node = arg
 		elif opt in ("-o", "--onlypath"):
 			only_path = True
-		elif opt in ("-f", "--fip"):
-			enable_fip = True
-		elif opt in ("-p", "--plotly"):
-			enable_plotly = True
 	if (src_node == None and dst_node != None) or (src_node != None and dst_node == None):
-		print("# python " + sys.argv[0] + usage_str)
+		print("# python " + sys.argv[0] + " [{-s|--src} <src node> {-d|--dst| <dst node> [-o|--only-path]]")
 		sys.exit(2)
 	elif (src_node == None and dst_node == None) and only_path:
-		print("# python " + sys.argv[0] + usage_str)
+		print("# python " + sys.argv[0] + " [{-s|--src} <src node> {-d|--dst| <dst node> [-o|--only-path]]")
 		sys.exit(2)
-	return src_node, dst_node, only_path, enable_fip, enable_plotly
+	return src_node, dst_node, only_path
 
 #####################################################################################
 
 if __name__ == '__main__':
 
-	## 최단 경로 조사 대상 인자
-	src_node, dst_node, only_path, enable_fip, enable_plotly = getArgs(sys.argv[1:])
+	## Plotly 연동 활성
+	enablePlotly = False
+
+	## Floating-IP 경로 활성
+	enableFIP = False
 
 	print("\nProcessing.............")
 	start_time = time.time()
 
-	## 인자 체크.
-	if src_node == None or dst_node == None:
-		isSP = False
+	## 최단 경로 조사 대상 인자
+	src_node, dst_node, only_path = getArgs(sys.argv[1:])
 
-	if isSP == False:
-		only_path = False
+	## 요청이 최단 경로 탐색인지 단순 전체 토플로지 검색인지 체크.
+	isSP = False
+	if src_node != None and dst_node != None:
+		isSP = True
+
+	## 최단 경로 일경우, 선택된 경로만 보여줄것인지 체크.
+	if isSP:
+		isOnlyPath = only_path
+	else:
+		isOnlyPath = False
 
 	###############################################
 	### Raw 데이터 생성
@@ -132,8 +135,8 @@ if __name__ == '__main__':
 	result_dvr_fip = []
 
 	hostnames = (
-		"pub-network-001",
-		"pub-network-002",
+#		"pub-network-001",
+#		"pub-network-002",
 		"pub-compute-001",
 		"pub-compute-002",
 		"pub-compute-003",
@@ -299,7 +302,7 @@ if __name__ == '__main__':
 				})
 
 		## FIP활성화 및 Compute 호스트일 경우만(snat-xxx 네임스페이스 존재 유무로 판단),  FIP연결성 메타 정보 수집
-		if enable_fip and not isNetworkHost:
+		if enableFIP and not isNetworkHost:
 			output_dvr_fip = exec_ssh(hostname, "(echo \"[\"; for NS in `ip netns | awk '{print $1}' | egrep \"qrouter|fip\"`; do IFs=`ip netns exec $NS ip -o link show | awk '{print $2\",\"$5\",\"$17 | \"sed -e 's/:,/,/g'\"}' | egrep \"^rfp|^fpr|^fg|^qr\"`; for IF in $IFs; do IF_ARRAY=(`echo $IF | awk -F',' '{print $1,$2,$3}'`); IF_NAME_ARRAY=(`echo ${IF_ARRAY[0]} | awk -F'@' '{print $1, $2}'`); IF_NAME=${IF_NAME_ARRAY[0]}; IF_ID=`ip netns exec $NS ip -o link show $IF_NAME | awk '{print $1 | \"sed -e 's/://g'\"}'`; IF_MTU=${IF_ARRAY[1]}; IF_MAC=${IF_ARRAY[2]}; IF_PAIR_ID=`echo ${IF_NAME_ARRAY[1]} | sed -e 's/^if//g'`; echo \"{\"; echo \"\\\"if_name\\\": \\\"$IF_NAME\\\",\"; echo \"\\\"if_namespace\\\": \\\"$NS\\\",\"; echo \"\\\"if_id\\\": \\\"$IF_ID\\\",\"; echo \"\\\"if_mtu\\\": \\\"$IF_MTU\\\",\"; echo \"\\\"if_mac\\\": \\\"$IF_MAC\\\",\"; echo \"\\\"if_pair_id\\\": \\\"$IF_PAIR_ID\\\"\"; echo \"},\"; done ;done | sed -e '$s/,//'; echo \"]\")")
 			for item in json.loads(output_dvr_fip):
 				item['if_hostname'] = hostname
@@ -487,7 +490,7 @@ if __name__ == '__main__':
 	edge_I2P = [(u, v) for (u, v) in G.edges() if (u.startswith("I:") and v.startswith("P:")) or (u.startswith("P:") and v.startswith("I:"))]
 	edge_P2B = [(u, v) for (u, v) in G.edges() if (u.startswith("P:") and v.startswith("B:")) or (u.startswith("B:") and v.startswith("P:"))]
 
-	if enable_fip:
+	if enableFIP:
 		## FIP 정보 추가를 위해, (B:br-int, P:int-br-ex) 타입의 Edge 제거
 		list_isNetworkHost = G.nodes(data='isNetworkHost')
 		for (u, v) in edge_P2B:
@@ -525,24 +528,22 @@ if __name__ == '__main__':
 				edge_SNAT.append((if_name, if_rfp))
 	
 		## VP:fpr-* 인터페이스의 Index-ID를 key로 해서, VP:fpr-* 이름을 조희 가능한 dict 생성
-		dvr_fip_id_hostname_fpr_pair = {}
+		dvr_fip_id_fpr_pair = {}
 		for item in result_dvr_fip:
 			if_name = item['if_name']
 			if if_name.startswith("VP:fpr-"):
 				if_id = item['if_id']
-				if_hostname = item['if_hostname']
-				key = if_id + "(" + if_hostname + ")"
 				#print if_id, if_name
-				dvr_fip_id_hostname_fpr_pair[key] = if_name
+				dvr_fip_id_fpr_pair[if_id] = if_name
+		#print dvr_fip_id_fpr_pair
+	
 		## VP:rfp-* <-> VP:fpr-* 에 대한 Node/Edge 정보 생성/추가
 		for item in result_dvr_fip:
 			if_name = item['if_name']
 			if if_name.startswith("VP:rfp-"):
 				if_pair_id = item['if_pair_id']
-				if_hostname = item['if_hostname']
-				key = if_pair_id + "(" + if_hostname + ")"
 				#print if_pair_id
-				if_pair_name = dvr_fip_id_hostname_fpr_pair[key]
+				if_pair_name = dvr_fip_id_fpr_pair[if_pair_id]
 				#print if_name, if_pair_name
 				G.add_node(if_pair_name)
 				G.add_edge(if_name, if_pair_name)
@@ -573,7 +574,7 @@ if __name__ == '__main__':
 	edge_VP2LB = removeDup(edge_VP2LB)
 	edge_I2VP = removeDup(edge_I2VP)
 	edge_T2LB = removeDup(edge_T2LB)
-	if enable_fip:
+	if enableFIP:
 		edge_SNAT = removeDup(edge_SNAT)
 		edge_ROUTING = removeDup(edge_ROUTING)
 	edge_if_type_patch = removeDup(edge_if_type_patch)
@@ -585,7 +586,7 @@ if __name__ == '__main__':
 	G.add_edges_from(edge_VP2LB)
 	G.add_edges_from(edge_I2VP)
 	G.add_edges_from(edge_T2LB)
-	if enable_fip:
+	if enableFIP:
 		G.add_edges_from(edge_SNAT)
 		G.add_edges_from(edge_ROUTING)
 	G.add_edges_from(edge_if_type_patch)
@@ -625,7 +626,6 @@ if __name__ == '__main__':
 		nodes_sp_if_type_patch = [node for node in nodes_if_type_patch if node in shortest_path_list]
 		nodes_sp_if_type_vxlan = [node for node in nodes_if_type_vxlan if node in shortest_path_list]
 		nodes_sp_if_type_internal = [node for node in nodes_if_type_internal if node in shortest_path_list]
-		nodes_sp_if_type_internal_fg = [node for node in nodes_if_type_internal_fg if node in shortest_path_list]
 		#nodes_sp_if_link_state_down = [node for node in nodes_if_link_state_down if node in shortest_path_list]
 
 	## SP Node 종류(Interface/Port/Bridge)별 목록 생성
@@ -680,7 +680,7 @@ if __name__ == '__main__':
 			if src in shortest_path_list and dst in shortest_path_list:
 				edge_if_type_vxlan_sp.append(edge)
 
-	if only_path:
+	if isOnlyPath:
 		## 필요한 Node 정보만 남기고 정리
 		nodes_sp_if_type_patch_tmp = []
 		for node in nodes_sp_if_type_patch:
@@ -700,7 +700,7 @@ if __name__ == '__main__':
 				nodes_sp_if_type_internal_tmp.append(node)
 		nodes_sp_if_type_internal = nodes_sp_if_type_internal_tmp
 	
-		if enable_fip:
+		if enableFIP:
 			nodes_sp_if_type_internal_fg_tmp = []
 			for node in nodes_sp_if_type_internal_fg:
 				if node in shortest_path_list:
@@ -770,7 +770,7 @@ if __name__ == '__main__':
 				G.remove_node(node)
 
 	## 레이아웃 정의
-	if only_path == True:
+	if isOnlyPath == True:
 		pos = nx.spring_layout(G, k=0.05, iterations=70)
 	else:
 		pos = nx.kamada_kawai_layout(G, scale=1)
@@ -802,7 +802,7 @@ if __name__ == '__main__':
 
 
 	### 기본 Node 스타일 정의/생성
-	if not only_path:
+	if not isOnlyPath:
 		## Interface Node 그리기
 		nx.draw_networkx_nodes(G, pos, nodelist=nodes_interface, with_labels=True, node_size=node_szie, node_shape='o', node_color='#F972FF', alpha=alpha_normal, linewidths=1)
 	
@@ -829,7 +829,8 @@ if __name__ == '__main__':
 	
 		## Internal 타입 노드 업데이트 (색상 변경)
 		nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_internal, with_labels=True, node_size=node_szie, node_shape='o', node_color='#382000', alpha=alpha_normal, linewidths=1)
-		nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_internal_fg, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF0000', alpha=alpha_normal, linewidths=1)
+		if enableFIP:
+			nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_internal_fg, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF0000', alpha=alpha_normal, linewidths=1)
 	
 		## Down 상태 노드 업데이트 (색상 변경)
 		## 미사용 (OVS의 link_state값이 정확하지 않음. namespace에 속한 Interface의 상태 체크 못하는 것으로 추정)
@@ -839,7 +840,7 @@ if __name__ == '__main__':
 
 	### SP 모드일 경우 Node 스타일 정의/덮어쓰기
 	if isSP:
-		if only_path:
+		if isOnlyPath:
 			node_szie_sp = 300
 		else:
 			node_szie_sp = 20
@@ -869,7 +870,8 @@ if __name__ == '__main__':
 	
 		## Internal 타입 노드 업데이트 (색상 변경)
 		nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_if_type_internal, with_labels=True, node_size=node_szie_sp, node_shape='o', node_color='#382000', alpha=alpha_sp, linewidths=1)
-		nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_if_type_internal_fg, with_labels=True, node_size=node_szie_sp, node_shape='o', node_color='#FF0000', alpha=alpha_sp, linewidths=1)
+		if enableFIP:
+			nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_if_type_internal_fg, with_labels=True, node_size=node_szie_sp, node_shape='o', node_color='#FF0000', alpha=alpha_sp, linewidths=1)
 	
 		## Down 상태 노드 업데이트 (색상 변경)
 		## 미사용 (OVS의 link_state값이 정확하지 않음. namespace에 속한 Interface의 상태 체크 못하는 것으로 추정)
@@ -895,7 +897,7 @@ if __name__ == '__main__':
 
 	if not isSP:
 		nx.draw_networkx_labels(G, pos, labels, font_size=label_font_size, font_family='sans-serif', alpha=alpha_normal)
-	elif isSP and not only_path:
+	elif isSP and not isOnlyPath:
 		nx.draw_networkx_labels(G, pos, labels, font_size=label_font_size, font_family='sans-serif', alpha=alpha_normal)
 		nx.draw_networkx_labels(G, pos, labels_sp, font_size=label_font_size_sp, font_family='sans-serif', alpha=alpha_sp)
 	else:
@@ -903,7 +905,7 @@ if __name__ == '__main__':
 
 	## Edge 그리기
 	# Only Path의 경우 Edge 스타일 정의/생성
-	if only_path:
+	if isOnlyPath:
 		nx.draw_networkx_edges(G, pos, edgelist=edge_I2P_sp, width=1, alpha=0.5, edge_color='#E67E22')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_P2B_sp, width=2, alpha=0.5, edge_color='#2ECC71')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_if_type_patch_sp, width=5, alpha=0.5, edge_color='#00FFE8')
@@ -920,12 +922,12 @@ if __name__ == '__main__':
 		nx.draw_networkx_edges(G, pos, edgelist=edge_I2VP, width=0.8, alpha=alpha_normal, edge_color='#68FF66')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_VP2LB, width=0.2, alpha=alpha_normal, edge_color='#E67E22')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_T2LB, width=0.2, alpha=alpha_normal, edge_color='#E67E22')
-		if enable_fip:
+		if enableFIP:
 			nx.draw_networkx_edges(G, pos, edgelist=edge_SNAT, width=0.2, alpha=alpha_normal, edge_color='#FF0000', style='dashed')
 			nx.draw_networkx_edges(G, pos, edgelist=edge_ROUTING, width=0.2, alpha=alpha_normal, edge_color='#0000C7', style='dashed')
 
 	## 모든 노드 표시 모드에서, SP 경로만 강조 Edge 스타일 정의/생성
-	if isSP and not only_path:
+	if isSP and not isOnlyPath:
 		nx.draw_networkx_edges(G, pos, edgelist=edge_I2P_sp, width=0.1, alpha=alpha_sp, edge_color='#E67E22')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_P2B_sp, width=0.2, alpha=alpha_sp, edge_color='#2ECC71')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_if_type_patch_sp, width=0.8, alpha=alpha_sp, edge_color='#00FFE8')
@@ -933,7 +935,7 @@ if __name__ == '__main__':
 		nx.draw_networkx_edges(G, pos, edgelist=edge_I2VP_sp, width=0.8, alpha=alpha_sp, edge_color='#68FF66')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_VP2LB_sp, width=0.2, alpha=alpha_sp, edge_color='#E67E22')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_T2LB_sp, width=0.2, alpha=alpha_sp, edge_color='#E67E22')
-		if enable_fip:
+		if enableFIP:
 			nx.draw_networkx_edges(G, pos, edgelist=edge_SNAT, width=0.2, alpha=alpha_normal, edge_color='#FF0000', style='dashed')
 			nx.draw_networkx_edges(G, pos, edgelist=edge_ROUTING, width=0.2, alpha=alpha_normal, edge_color='#0000C7', style='dashed')
 
@@ -952,11 +954,11 @@ if __name__ == '__main__':
 
 	print("Creating Image........")
 	start_time = time.time()
-	plt.savefig("/var/www/html/OpenStack-Network-Connectivity.png", format = "png", dpi = 800)
+	plt.savefig("/var/www/html/OpenStack-Network-Connectivity.png", format = "png", dpi = 600)
 	print("Created Image [elapsed time: %f sec]\n" % (time.time() - start_time))
 
 ##### plot.ly 그래프 작성/전송 ########################################################
-	if enable_plotly:
+	if enablePlotly:
 		print("Creating Plotly........")
 		start_time = time.time()
 		#G=nx.random_geometric_graph(200,0.125)

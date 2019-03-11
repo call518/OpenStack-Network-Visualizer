@@ -78,7 +78,9 @@ def getArgs(argv):
 	only_path = False
 	enable_fip = False
 	enable_plotly = False
+
 	usage_str = " [{-s|--src} <src node> {-d|--dst} <dst node> [-o|--onlypath] [-f|--fip] [-p|--plotly]"
+
 	try:
 		opts, args = getopt.getopt(argv, "hsdofp", ["help", "src=", "dst=", "onlypath", "fip", "plotly"])
 	except getopt.GetoptError:
@@ -113,15 +115,25 @@ if __name__ == '__main__':
 	## 최단 경로 조사 대상 인자
 	src_node, dst_node, only_path, enable_fip, enable_plotly = getArgs(sys.argv[1:])
 
+	## Plotly 연동 활성
+	enable_plotly = False
+
+	## Floating-IP 경로 활성
+	enable_fip = False
+
 	print("\nProcessing.............")
 	start_time = time.time()
 
-	## 인자 체크.
-	if src_node == None or dst_node == None:
-		isSP = False
+	## 요청이 최단 경로 탐색인지 단순 전체 토플로지 검색인지 체크.
+	isSP = False
+	if src_node != None and dst_node != None:
+		isSP = True
 
-	if isSP == False:
-		only_path = False
+	## 최단 경로 일경우, 선택된 경로만 보여줄것인지 체크.
+	if isSP:
+		isOnlyPath = only_path
+	else:
+		isOnlyPath = False
 
 	###############################################
 	### Raw 데이터 생성
@@ -680,7 +692,7 @@ if __name__ == '__main__':
 			if src in shortest_path_list and dst in shortest_path_list:
 				edge_if_type_vxlan_sp.append(edge)
 
-	if only_path:
+	if isOnlyPath:
 		## 필요한 Node 정보만 남기고 정리
 		nodes_sp_if_type_patch_tmp = []
 		for node in nodes_sp_if_type_patch:
@@ -770,7 +782,7 @@ if __name__ == '__main__':
 				G.remove_node(node)
 
 	## 레이아웃 정의
-	if only_path == True:
+	if isOnlyPath == True:
 		pos = nx.spring_layout(G, k=0.05, iterations=70)
 	else:
 		pos = nx.kamada_kawai_layout(G, scale=1)
@@ -802,7 +814,7 @@ if __name__ == '__main__':
 
 
 	### 기본 Node 스타일 정의/생성
-	if not only_path:
+	if not isOnlyPath:
 		## Interface Node 그리기
 		nx.draw_networkx_nodes(G, pos, nodelist=nodes_interface, with_labels=True, node_size=node_szie, node_shape='o', node_color='#F972FF', alpha=alpha_normal, linewidths=1)
 	
@@ -839,7 +851,7 @@ if __name__ == '__main__':
 
 	### SP 모드일 경우 Node 스타일 정의/덮어쓰기
 	if isSP:
-		if only_path:
+		if isOnlyPath:
 			node_szie_sp = 300
 		else:
 			node_szie_sp = 20
@@ -895,7 +907,7 @@ if __name__ == '__main__':
 
 	if not isSP:
 		nx.draw_networkx_labels(G, pos, labels, font_size=label_font_size, font_family='sans-serif', alpha=alpha_normal)
-	elif isSP and not only_path:
+	elif isSP and not isOnlyPath:
 		nx.draw_networkx_labels(G, pos, labels, font_size=label_font_size, font_family='sans-serif', alpha=alpha_normal)
 		nx.draw_networkx_labels(G, pos, labels_sp, font_size=label_font_size_sp, font_family='sans-serif', alpha=alpha_sp)
 	else:
@@ -903,7 +915,7 @@ if __name__ == '__main__':
 
 	## Edge 그리기
 	# Only Path의 경우 Edge 스타일 정의/생성
-	if only_path:
+	if isOnlyPath:
 		nx.draw_networkx_edges(G, pos, edgelist=edge_I2P_sp, width=1, alpha=0.5, edge_color='#E67E22')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_P2B_sp, width=2, alpha=0.5, edge_color='#2ECC71')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_if_type_patch_sp, width=5, alpha=0.5, edge_color='#00FFE8')
@@ -925,7 +937,7 @@ if __name__ == '__main__':
 			nx.draw_networkx_edges(G, pos, edgelist=edge_ROUTING, width=0.2, alpha=alpha_normal, edge_color='#0000C7', style='dashed')
 
 	## 모든 노드 표시 모드에서, SP 경로만 강조 Edge 스타일 정의/생성
-	if isSP and not only_path:
+	if isSP and not isOnlyPath:
 		nx.draw_networkx_edges(G, pos, edgelist=edge_I2P_sp, width=0.1, alpha=alpha_sp, edge_color='#E67E22')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_P2B_sp, width=0.2, alpha=alpha_sp, edge_color='#2ECC71')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_if_type_patch_sp, width=0.8, alpha=alpha_sp, edge_color='#00FFE8')

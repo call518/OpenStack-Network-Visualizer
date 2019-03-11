@@ -78,7 +78,9 @@ def getArgs(argv):
 	only_path = False
 	enable_fip = False
 	enable_plotly = False
+
 	usage_str = " [{-s|--src} <src node> {-d|--dst} <dst node> [-o|--onlypath] [-f|--fip] [-p|--plotly]"
+
 	try:
 		opts, args = getopt.getopt(argv, "hsdofp", ["help", "src=", "dst=", "onlypath", "fip", "plotly"])
 	except getopt.GetoptError:
