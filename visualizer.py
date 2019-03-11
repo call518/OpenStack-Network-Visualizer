@@ -594,7 +594,8 @@ if __name__ == '__main__':
 
 	## 요청된 시작과 끝 노드에 대한 '최단 경로' 노드 리스트 작성
 	if isSP:
-		shortest_path_list = nx.shortest_path(G, source=src_node, target=dst_node)
+		shortest_path_list = nx.astar_path(G, source=src_node, target=dst_node)
+		#shortest_path_list = nx.shortest_path(G, source=src_node, target=dst_node)
 		#shortest_path_list = nx.all_shortest_paths(G, source=src_node, target=dst_node)
 		#shortest_path_list = nx.shortest_path_length(G, source=src_node, target=dst_node)
 		#shortest_path_list = nx.average_shortest_path_length(G, source=src_node, target=dst_node)
@@ -602,11 +603,6 @@ if __name__ == '__main__':
 		#for p in shortest_path_list:
 		#	print(p)
 		#sys.exit(1)
-
-	#for p in shortest_path_list:
-	#	print(p)
-	#print shortest_path_list
-	#sys.exit(1)
 
 	## Node 종류(Interface/Port/Bridge)별 목록 생성
 	nodes_interface = [node for node in G.nodes() if node.startswith("I:")]
