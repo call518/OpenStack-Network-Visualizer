@@ -117,8 +117,9 @@ if __name__ == '__main__':
 	start_time = time.time()
 
 	## 인자 체크.
-	if src_node == None or dst_node == None:
-		isSP = False
+	isSP = False
+	if src_node != None and dst_node != None:
+		isSP = True
 
 	if isSP == False:
 		only_path = False
