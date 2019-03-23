@@ -2,7 +2,6 @@
 
 "OpenStack Network Visualizer"
 
-(Note) Current phase is prototype.
 
 # Screen Shots
 
