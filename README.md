@@ -1,6 +1,6 @@
-# Virtaul Network Visualizer
+# OpenStack Network Visualizer
 
-"Virtaul Network Visualizer"
+"OpenStack Network Visualizer"
 
 (Note) Current phase is prototype.
 
