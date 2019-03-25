@@ -42,9 +42,41 @@
  * T: TAP Device
 * (Note) FIP 정보는 DVR 모드만 지원.
 
+#### Tested Env.
+
+* OS
+ * CentOS Linux release 7.5.1804 (Core) x86_64
+ * CentOS Linux release 7.6.1810 (Core) x86_64
+* OVS Versions
+ * ovs-vsctl (Open vSwitch) 2.6.1
+ * ovs-vsctl (Open vSwitch) 2.10.1
+* Python
+ * Python 2.7.5
+ * (Optional) Tested on virtualenv.
+
+#### Required Python Modules
+
+* paramiko
+* networkx
+* networkx
+* pandas
+* plotly
+* scipy
+
 ### Examples
 
-* 조사 대상 조정. (hostnames 리스트 조정)
+* 조사 대상 지정: hostnames & OVS-Local-IP 쌍 딕셔서리 수정.
+
+```python
+    hostnames = {
+        "dev-network-001": "10.0.42.18",
+        "dev-compute-001": "10.0.42.36",
+        "dev-compute-002": "10.0.42.37",
+    }
+```
+
+
+### Command Line Samples
 
 ```bash
 ### 전체 구성도 작성

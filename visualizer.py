@@ -19,7 +19,7 @@ import paramiko
 import time
 import sys, getopt
 import json
-import socket
+#import socket
 import networkx as nx
 import matplotlib
 matplotlib.use("Agg")
@@ -106,6 +106,12 @@ def getArgs(argv):
 		sys.exit(2)
 	return src_node, dst_node, only_path, enable_fip, enable_plotly
 
+def getHostnameByOvsLocalIp(ip):
+	for hostname, ovs_local_ip in hostnames.items():
+		if ip == ovs_local_ip:
+			return hostname
+	return None
+
 #####################################################################################
 
 if __name__ == '__main__':
@@ -132,14 +138,19 @@ if __name__ == '__main__':
 	result_linux_bridge = []
 	result_dvr_fip = []
 
-	hostnames = (
-		"pub-network-001",
-		"pub-network-002",
-		"pub-compute-001",
-		"pub-compute-002",
-		"pub-compute-003",
-		"pub-compute-004",
-	)
+	#hostnames = (
+	#	#"dev-r2network-001",
+	#	"dev-r2compute-001",
+	#	#"dev-r2compute-002",
+	#)
+
+	## pair of hostanem and ovs-local-ip.
+	#ovs_local_ip_by_hostname = {
+	hostnames = {
+		"dev-r2network-001": "10.0.42.18",
+		"dev-r2compute-001": "10.0.42.36",
+		"dev-r2compute-002": "10.0.42.37",
+	}
 
 	for hostname in hostnames:
 		## Network 호스트인지 체크
@@ -220,11 +231,19 @@ if __name__ == '__main__':
 			if_statistics_tx_packets = findDictValue("tx_packets", statistics_dict)
 	
 			## Interface가 속해 있는 Port 검색
-			if_port_uuid = if_port_name = None
+			if_port_uuid = if_port_name = tmp_port_interface_uuid = tmp_port_name = None
 			for item_port in json_data_port['data']:
-				if if_uuid == item_port[8][1]:
+				## OVS 버전에 따른 속성 순서 차이로 인해 구별함 (임시)
+				try:
+					tmp_port_interface_uuid = item_port[8][1]
+				except TypeError:
+					tmp_port_interface_uuid = item_port[9][1]
+				if if_uuid == tmp_port_interface_uuid:
 					if_port_uuid = item_port[0][1]
-					if_port_name = "P:" + item_port[11] + "(" + hostname + ")"
+					try:
+						if_port_name = "P:" + item_port[11] + "(" + hostname + ")"
+					except TypeError:
+						if_port_name = "P:" + item_port[12] + "(" + hostname + ")"
 					break
 	
 			## Port가 속해 있는 Bridge 검색
@@ -437,9 +456,11 @@ if __name__ == '__main__':
 			if_type = data_dict['if_type']
 			if if_type == "vxlan":
 				vxlan_local_ip = data_dict['if_options_vxlan_local_ip']
-				vxlan_local_hostname = socket.gethostbyaddr(vxlan_local_ip)[0]
 				vxlan_remote_ip = data_dict['if_options_vxlan_remote_ip']
-				vxlan_remote_hostname = socket.gethostbyaddr(vxlan_remote_ip)[0]
+				#vxlan_local_hostname = socket.gethostbyaddr(vxlan_local_ip)[0]
+				vxlan_local_hostname = getHostnameByOvsLocalIp(vxlan_local_ip)
+				#vxlan_remote_hostname = socket.gethostbyaddr(vxlan_remote_ip)[0]
+				vxlan_remote_hostname = getHostnameByOvsLocalIp(vxlan_remote_ip)
 				vxlan_link_dict[vxlan_local_hostname + "---" + vxlan_remote_hostname] = if_name
 
 	## if_type 속성에 따른 Node 및 Edge 목록 생성
@@ -467,9 +488,11 @@ if __name__ == '__main__':
 			elif if_type == "vxlan":
 				nodes_if_type_vxlan.append(if_name)
 				vxlan_local_ip = data_dict['if_options_vxlan_local_ip']
-				vxlan_local_hostname = socket.gethostbyaddr(vxlan_local_ip)[0]
+				#vxlan_local_hostname = socket.gethostbyaddr(vxlan_local_ip)[0]
+				vxlan_local_hostname = getHostnameByOvsLocalIp(vxlan_local_ip)
 				vxlan_remote_ip = data_dict['if_options_vxlan_remote_ip']
-				vxlan_remote_hostname = socket.gethostbyaddr(vxlan_remote_ip)[0]
+				#vxlan_remote_hostname = socket.gethostbyaddr(vxlan_remote_ip)[0]
+				vxlan_remote_hostname = getHostnameByOvsLocalIp(vxlan_remote_ip)
 				if vxlan_remote_hostname in hostnames:
 					find_key = vxlan_remote_hostname + "---" + vxlan_local_hostname
 					remote_if_name = vxlan_link_dict[find_key]
