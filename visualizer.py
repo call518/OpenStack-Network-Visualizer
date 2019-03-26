@@ -941,8 +941,8 @@ if __name__ == '__main__':
 		nx.draw_networkx_edges(G, pos, edgelist=edge_VP2LB, width=0.2, alpha=alpha_normal, edge_color='#16BFFF', label='Linux-VETH <--> Linux-Bridge')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_T2LB, width=0.2, alpha=alpha_normal, edge_color='#6A6A6A', label='Linux-TAP <--> Linux-Bridge')
 		if enable_fip:
-			nx.draw_networkx_edges(G, pos, edgelist=edge_SNAT, width=0.2, alpha=alpha_normal, edge_color='#FF0000', style='dashed', label='fg <--> fpr (in F-IP Namespace)')
-			nx.draw_networkx_edges(G, pos, edgelist=edge_ROUTING, width=0.2, alpha=alpha_normal, edge_color='#0000C7', style='dashed', label='rfp <--> qr (in Dist-Router Namespace)')
+			nx.draw_networkx_edges(G, pos, edgelist=edge_SNAT, width=0.2, alpha=alpha_normal, edge_color='#FF0000', style='dashed', label='fg <--> fpr (SNAT in F-IP Namespace)')
+			nx.draw_networkx_edges(G, pos, edgelist=edge_ROUTING, width=0.2, alpha=alpha_normal, edge_color='#0000C7', style='dashed', label='rfp <--> qr (ROUTING in Dist-Router Namespace)')
 
 	## 모든 노드 표시 모드에서, SP 경로만 강조 Edge 스타일 정의/생성
 	if isSP and not only_path:
@@ -954,8 +954,8 @@ if __name__ == '__main__':
 		nx.draw_networkx_edges(G, pos, edgelist=edge_VP2LB_sp, width=0.2, alpha=alpha_sp, edge_color='#16BFFF', label='Linux-VETH <--> Linux-Bridge')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_T2LB_sp, width=0.2, alpha=alpha_sp, edge_color='#6A6A6A', label='Linux-TAP <--> Linux-Bridge')
 		if enable_fip:
-			nx.draw_networkx_edges(G, pos, edgelist=edge_SNAT, width=0.2, alpha=alpha_normal, edge_color='#FF0000', style='dashed', label='fg <--> fpr (in F-IP Namespace)')
-			nx.draw_networkx_edges(G, pos, edgelist=edge_ROUTING, width=0.2, alpha=alpha_normal, edge_color='#0000C7', style='dashed', label='rfp <--> qr (in Dist-Router Namespace)')
+			nx.draw_networkx_edges(G, pos, edgelist=edge_SNAT, width=0.2, alpha=alpha_normal, edge_color='#FF0000', style='dashed', label='fg <--> fpr (SNAT in F-IP Namespace)')
+			nx.draw_networkx_edges(G, pos, edgelist=edge_ROUTING, width=0.2, alpha=alpha_normal, edge_color='#0000C7', style='dashed', label='rfp <--> qr (ROUTING in Dist-Router Namespace)')
 
 	plt.axis('off')
 
