@@ -824,37 +824,37 @@ if __name__ == '__main__':
 	### 기본 Node 스타일 정의/생성
 	if not only_path:
 		## Interface Node 그리기
-		nx.draw_networkx_nodes(G, pos, nodelist=nodes_interface, with_labels=True, node_size=node_szie, node_shape='o', node_color='#F972FF', alpha=alpha_normal, linewidths=1)
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_interface, with_labels=True, node_size=node_szie, node_shape='o', node_color='#F972FF', alpha=alpha_normal, linewidths=1, label='OVS Interface')
 	
 		## Port Node 그리기
-		nx.draw_networkx_nodes(G, pos, nodelist=nodes_port, with_labels=True, node_size=node_szie, node_shape='o', node_color='#72B2FF', alpha=alpha_normal, linewidths=1)
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_port, with_labels=True, node_size=node_szie, node_shape='o', node_color='#72B2FF', alpha=alpha_normal, linewidths=1, label='OVS POrt')
 	
 		## Bridge Node 그리기
-		nx.draw_networkx_nodes(G, pos, nodelist=nodes_bridge, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF5634', alpha=alpha_normal, linewidths=1)
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_bridge, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF5634', alpha=alpha_normal, linewidths=1, label='OVS Bridge')
 	
 		## Linux Interface Node 그리기 (veth pair)
-		nx.draw_networkx_nodes(G, pos, nodelist=nodes_linux_interface_pair, with_labels=True, node_size=node_szie, node_shape='o', node_color='#F972FF', alpha=alpha_normal, linewidths=1)
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_linux_interface_pair, with_labels=True, node_size=node_szie, node_shape='o', node_color='#F972FF', alpha=alpha_normal, linewidths=1, label='Linux VETH (One of Pair)')
 	
 		## Linux Interface Node 그리기 (tap)
-		nx.draw_networkx_nodes(G, pos, nodelist=nodes_linux_interface_tap, with_labels=True, node_size=node_szie, node_shape='o', node_color='#7E7E7E', alpha=alpha_normal, linewidths=1)
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_linux_interface_tap, with_labels=True, node_size=node_szie, node_shape='o', node_color='#7E7E7E', alpha=alpha_normal, linewidths=1, label='Linux TAP')
 	
 		## Linux Bridge Node 그리기
-		nx.draw_networkx_nodes(G, pos, nodelist=nodes_linux_bridge, with_labels=True, node_size=node_szie, node_shape='o', node_color='#0C00A0', alpha=alpha_normal, linewidths=1)
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_linux_bridge, with_labels=True, node_size=node_szie, node_shape='o', node_color='#0C00A0', alpha=alpha_normal, linewidths=1, label='Linux Bridge')
 	
 		## Patch 타입 노드 업데이트 (색상 변경)
-		nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_patch, with_labels=True, node_size=node_szie, node_shape='o', node_color='#279700', alpha=alpha_normal, linewidths=1)
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_patch, with_labels=True, node_size=node_szie, node_shape='o', node_color='#279700', alpha=alpha_normal, linewidths=1, label='OVS Patch (One of Patch)')
 	
 		## VxLAN 타입 노드 업데이트 (색상 변경)
-		nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_vxlan, with_labels=True, node_size=node_szie, node_shape='o', node_color='#E9D000', alpha=alpha_normal, linewidths=1)
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_vxlan, with_labels=True, node_size=node_szie, node_shape='o', node_color='#E9D000', alpha=alpha_normal, linewidths=1, label='OVS VxLAN')
 	
 		## Internal 타입 노드 업데이트 (색상 변경)
-		nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_internal, with_labels=True, node_size=node_szie, node_shape='o', node_color='#382000', alpha=alpha_normal, linewidths=1)
-		nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_internal_fg, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF0000', alpha=alpha_normal, linewidths=1)
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_internal, with_labels=True, node_size=node_szie, node_shape='o', node_color='#382000', alpha=alpha_normal, linewidths=1, label='OVS Internal')
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_type_internal_fg, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF0000', alpha=alpha_normal, linewidths=1, label='OVS Internal(fg)')
 	
 		## Down 상태 노드 업데이트 (색상 변경)
 		## 미사용 (OVS의 link_state값이 정확하지 않음. namespace에 속한 Interface의 상태 체크 못하는 것으로 추정)
-		#nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_link_state_down, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF0000', alpha=alpha_normal, linewidths=1)
-		#nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_if_link_state_down, with_labels=True, node_size=node_szie_ap, node_shape='o', node_color='#FF0000', alpha=alpha_sp, linewidths=1)
+		#nx.draw_networkx_nodes(G, pos, nodelist=nodes_if_link_state_down, with_labels=True, node_size=node_szie, node_shape='o', node_color='#FF0000', alpha=alpha_normal, linewidths=1, label='OVS Link-Down')
+		#nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_if_link_state_down, with_labels=True, node_size=node_szie_ap, node_shape='o', node_color='#FF0000', alpha=alpha_sp, linewidths=1, label='OVS Link-Down')
 
 
 	### SP 모드일 경우 Node 스타일 정의/덮어쓰기
@@ -873,7 +873,7 @@ if __name__ == '__main__':
 		nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_bridge, with_labels=True, node_size=node_szie_sp, node_shape='o', node_color='#FF5634', alpha=alpha_sp, linewidths=1, label='OVS Bridge')
 	
 		## Linux Interface Node 그리기 (veth pair)
-		nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_linux_interface_pair, with_labels=True, node_size=node_szie_sp, node_shape='o', node_color='#F972FF', alpha=alpha_sp, linewidths=1, label='Linux VETH-Pair')
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_linux_interface_pair, with_labels=True, node_size=node_szie_sp, node_shape='o', node_color='#F972FF', alpha=alpha_sp, linewidths=1, label='Linux VETH (One of Pair)')
 	
 		## Linux Interface Node 그리기 (tap)
 		nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_linux_interface_tap, with_labels=True, node_size=node_szie_sp, node_shape='o', node_color='#7E7E7E', alpha=alpha_sp, linewidths=1, label='Linux TAP')
@@ -882,7 +882,7 @@ if __name__ == '__main__':
 		nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_linux_bridge, with_labels=True, node_size=node_szie_sp, node_shape='o', node_color='#0C00A0', alpha=alpha_sp, linewidths=1, label='Linux Bridge')
 	
 		## Patch 타입 노드 업데이트 (색상 변경)
-		nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_if_type_patch, with_labels=True, node_size=node_szie_sp, node_shape='o', node_color='#279700', alpha=alpha_sp, linewidths=1, label='OVS Patch')
+		nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_if_type_patch, with_labels=True, node_size=node_szie_sp, node_shape='o', node_color='#279700', alpha=alpha_sp, linewidths=1, label='OVS Patch (One of Patch)')
 	
 		## VxLAN 타입 노드 업데이트 (색상 변경)
 		nx.draw_networkx_nodes(G, pos, nodelist=nodes_sp_if_type_vxlan, with_labels=True, node_size=node_szie_sp, node_shape='o', node_color='#E9D000', alpha=alpha_sp, linewidths=1, label='OVS VxLAN')
@@ -928,8 +928,8 @@ if __name__ == '__main__':
 		nx.draw_networkx_edges(G, pos, edgelist=edge_P2B_sp, width=2, alpha=0.5, edge_color='#2ECC71', label='OVS-Port <--> OVS-Bridge')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_if_type_patch_sp, width=5, alpha=0.5, edge_color='#00FFE8', label='OVS-Patch')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_if_type_vxlan_sp, width=5, alpha=0.5, edge_color='#FFF818', label='VxLAN Tunnel')
-		nx.draw_networkx_edges(G, pos, edgelist=edge_I2VP_sp, width=0.8, alpha=0.5, edge_color='#68FF66', label='OVS-Interface <--> Linux-VETH')
-		nx.draw_networkx_edges(G, pos, edgelist=edge_VP2LB_sp, width=0.2, alpha=0.5, edge_color='#E67E22', label='Linux-VETH <--> Linux-Bridge')
+		nx.draw_networkx_edges(G, pos, edgelist=edge_I2VP_sp, width=0.8, alpha=0.5, edge_color='#68FF66', label='Linux VETH-Pair')
+		nx.draw_networkx_edges(G, pos, edgelist=edge_VP2LB_sp, width=0.2, alpha=0.5, edge_color='#16BFFF', label='Linux-VETH <--> Linux-Bridge')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_T2LB_sp, width=0.2, alpha=0.5, edge_color='#6A6A6A', label='Linux-TAP <--> Linux-Bridge')
 	# 그외, 모든 노드 정보 표시 모드에서 Edge 스타일 정의/생성
 	else:
@@ -937,8 +937,8 @@ if __name__ == '__main__':
 		nx.draw_networkx_edges(G, pos, edgelist=edge_P2B, width=0.2, alpha=alpha_normal, edge_color='#2ECC71', label='OVS-Port <--> OVS-Bridge')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_if_type_patch, width=0.8, alpha=alpha_normal, edge_color='#00FFE8', label='OVS-Patch')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_if_type_vxlan, width=1, alpha=alpha_normal, edge_color='#FFF818', label='VxLAN Tunnel')
-		nx.draw_networkx_edges(G, pos, edgelist=edge_I2VP, width=0.8, alpha=alpha_normal, edge_color='#68FF66', label='OVS-Interface <--> Linux-VETH')
-		nx.draw_networkx_edges(G, pos, edgelist=edge_VP2LB, width=0.2, alpha=alpha_normal, edge_color='#E67E22', label='Linux-VETH <--> Linux-Bridge')
+		nx.draw_networkx_edges(G, pos, edgelist=edge_I2VP, width=0.8, alpha=alpha_normal, edge_color='#68FF66', label='Linux VETH-Pair')
+		nx.draw_networkx_edges(G, pos, edgelist=edge_VP2LB, width=0.2, alpha=alpha_normal, edge_color='#16BFFF', label='Linux-VETH <--> Linux-Bridge')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_T2LB, width=0.2, alpha=alpha_normal, edge_color='#6A6A6A', label='Linux-TAP <--> Linux-Bridge')
 		if enable_fip:
 			nx.draw_networkx_edges(G, pos, edgelist=edge_SNAT, width=0.2, alpha=alpha_normal, edge_color='#FF0000', style='dashed', label='fg <--> fpr (in F-IP Namespace)')
@@ -950,8 +950,8 @@ if __name__ == '__main__':
 		nx.draw_networkx_edges(G, pos, edgelist=edge_P2B_sp, width=0.2, alpha=alpha_sp, edge_color='#2ECC71', label='OVS-Port <--> OVS-Bridge')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_if_type_patch_sp, width=0.8, alpha=alpha_sp, edge_color='#00FFE8', label='OVS-Patch')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_if_type_vxlan_sp, width=1, alpha=alpha_sp, edge_color='#FFF818', label='VxLAN Tunnel')
-		nx.draw_networkx_edges(G, pos, edgelist=edge_I2VP_sp, width=0.8, alpha=alpha_sp, edge_color='#68FF66', label='OVS-Interface <--> Linux-VETH')
-		nx.draw_networkx_edges(G, pos, edgelist=edge_VP2LB_sp, width=0.2, alpha=alpha_sp, edge_color='#E67E22', label='Linux-VETH <--> Linux-Bridge')
+		nx.draw_networkx_edges(G, pos, edgelist=edge_I2VP_sp, width=0.8, alpha=alpha_sp, edge_color='#68FF66', label='Linux VETH-Pair')
+		nx.draw_networkx_edges(G, pos, edgelist=edge_VP2LB_sp, width=0.2, alpha=alpha_sp, edge_color='#16BFFF', label='Linux-VETH <--> Linux-Bridge')
 		nx.draw_networkx_edges(G, pos, edgelist=edge_T2LB_sp, width=0.2, alpha=alpha_sp, edge_color='#6A6A6A', label='Linux-TAP <--> Linux-Bridge')
 		if enable_fip:
 			nx.draw_networkx_edges(G, pos, edgelist=edge_SNAT, width=0.2, alpha=alpha_normal, edge_color='#FF0000', style='dashed', label='fg <--> fpr (in F-IP Namespace)')
@@ -973,7 +973,7 @@ if __name__ == '__main__':
 	print("Creating Image........")
 	start_time = time.time()
 	#plt.legend(numpoints = 1)
-	plt.legend(loc=1, prop={'size': 3})
+	plt.legend(loc=2, prop={'size': 2})
 	plt.savefig("/var/www/html/OpenStack-Network-Connectivity.png", format = "png", dpi = 800)
 	print("Created Image [elapsed time: %f sec]\n" % (time.time() - start_time))
 
