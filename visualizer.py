@@ -802,7 +802,7 @@ if __name__ == '__main__':
 	#pos = nx.circular_layout(G)  # positions for all nodes
 	#pos = nx.random_layout(G)  # positions for all nodes
 
-	## 노드 겹침 회희 레이아웃::kamada kawai (주의: 노드가 많을 경우, 시간이 오래 걸림)
+	## 노드 겹침 회피 레이아웃::kamada kawai (주의: 노드가 많을 경우, 시간이 오래 걸림)
 	#df = pd.DataFrame(index=G.nodes(), columns=G.nodes())
 	#for row, data in nx.shortest_path_length(G):
 	#    for col, dist in data.items():
