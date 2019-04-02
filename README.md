@@ -26,7 +26,7 @@
 * -d|--dst : 경로 탐색시, 도착 노드 지정
 * -o|--onlypath : 경로 노드만 표시
 * -f|--fip : DVR모드에서 FIP 관련 정보 표시
-* -p|--plotly : plotly 활성화
+* -p|--plotly : plotly 연동 활성화 (plotly API-Key 필요)
 
 ### Tested Env.
 
