@@ -28,21 +28,7 @@
 * -f|--fip : DVR모드에서 FIP 관련 정보 표시
 * -p|--plotly : plotly 활성화
 
-### Requirements
-
-* 모든 호스트들은 Key 또는 Password 기반 SSH 연결 지원.
-* VXLAN 연결 IP를 Hostname으로 질의 가능. (e.g /etc/hosts 등록)
-* 기본 그래프 파일 출력 경로 -> "/var/www/html/"
-* Headers (Types)
- * B: Bridge
- * P: Port
- * I: Interface
- * VP: VETH Pair
- * LB : Linux Bridge
- * T: TAP Device
-* (Note) FIP 정보는 DVR 모드만 지원.
-
-#### Tested Env.
+### Tested Env.
 
 * OS
  * CentOS Linux release 7.5.1804 (Core) x86_64
@@ -54,7 +40,14 @@
  * Python 2.7.5
  * (Optional) Tested on virtualenv.
 
-#### Required Python Modules
+### Requirements
+
+* 모든 호스트들은 Key 또는 Password 기반 SSH 연결 지원.
+* VXLAN 연결 IP를 Hostname으로 질의 가능. (e.g /etc/hosts 등록)
+* 기본 그래프 파일 출력 경로 -> "/var/www/html/"
+* (Note) FIP 정보는 DVR 모드만 지원.
+
+#### Python Modules
 
 * paramiko
 * networkx
@@ -94,6 +87,17 @@
 # python visualizer.py --src T:tap94d54818-a5 --dst "I:eth1(pub-compute-001)" --onlypath
 ```
 
+### APPENDIX
+
+#### Legends
+
+* Headers (Types)
+ * B: Bridge
+ * P: Port
+ * I: Interface
+ * VP: VETH Pair
+ * LB : Linux Bridge
+ * T: TAP Device
 
 # TODO
 
