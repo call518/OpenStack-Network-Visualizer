@@ -92,12 +92,12 @@
 #### Legends
 
 * Headers (Types)
- * B: Bridge
- * P: Port
- * I: Interface
- * VP: VETH Pair
- * LB : Linux Bridge
- * T: TAP Device
+  * B: Bridge
+  * P: Port
+  * I: Interface
+  * VP: VETH Pair
+  * LB : Linux Bridge
+  * T: TAP Device
 
 # TODO
 
