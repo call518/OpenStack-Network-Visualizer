@@ -31,14 +31,14 @@
 ### Tested Env.
 
 * OS
- * CentOS Linux release 7.5.1804 (Core) x86_64
- * CentOS Linux release 7.6.1810 (Core) x86_64
+  * CentOS Linux release 7.5.1804 (Core) x86_64
+  * CentOS Linux release 7.6.1810 (Core) x86_64
 * OVS Versions
- * ovs-vsctl (Open vSwitch) 2.6.1
- * ovs-vsctl (Open vSwitch) 2.10.1
+  * ovs-vsctl (Open vSwitch) 2.6.1
+  * ovs-vsctl (Open vSwitch) 2.10.1
 * Python
- * Python 2.7.5
- * (Optional) Tested on virtualenv.
+  * Python 2.7.5
+  * (Optional) Tested on virtualenv.
 
 ### Requirements
 
