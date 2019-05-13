@@ -52,6 +52,7 @@
 * paramiko
 * networkx
 * pandas
+* matplotlib
 * plotly
 * scipy
 
